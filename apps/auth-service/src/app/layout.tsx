@@ -2,14 +2,13 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/Providers'
-//import Navigation from '@/components/Navigation'
-import EnhancedNavigation from '@/components/EnhancedNavigation'
+import { AppLayout } from '@tt-ms-stack/ui'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'NextAuth App',
-  description: 'NextAuth.js with App Router',
+  title: 'Auth Service - TT-MS-Stack',
+  description: 'Authentication microservice',
 }
 
 export default function RootLayout({
@@ -21,12 +20,18 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <div className="min-h-screen bg-gray-50">
-            <EnhancedNavigation />
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-              {children}
-            </main>
-          </div>
+          <AppLayout
+            serviceName="Auth Service"
+            serviceColor="blue"
+            showServiceSwitcher={true}
+            customNavLinks={[
+              { href: '/dashboard', label: 'Dashboard' },
+              { href: '/admin', label: 'Admin Panel' }
+            ]}
+            showFooter={true}
+          >
+            {children}
+          </AppLayout>
         </Providers>
       </body>
     </html>

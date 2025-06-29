@@ -1,11 +1,13 @@
-import './globals.css'
+import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import './globals.css'
 import { AuthProvider } from './providers/auth-provider'
+import { EnhancedNavigation } from '@tt-ms-stack/ui'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata = {
-  title: 'User Service',
+export const metadata: Metadata = {
+  title: 'User Service - TT-MS-Stack',
   description: 'User management microservice',
 }
 
@@ -18,12 +20,19 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <header className="bg-blue-600 text-white p-4">
-            <h1 className="text-xl font-bold">User Service</h1>
-          </header>
-          <main className="container mx-auto p-4">
-            {children}
-          </main>
+          <div className="min-h-screen bg-gray-50">
+            <EnhancedNavigation 
+              serviceName="User Service"
+              serviceColor="green"
+              serviceIcon="U"
+              customLinks={[
+                { href: '/admin', label: 'Admin Panel' }
+              ]}
+            />
+            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+              {children}
+            </main>
+          </div>
         </AuthProvider>
       </body>
     </html>

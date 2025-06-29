@@ -1,0 +1,1 @@
+{"version":3,"file":"TopRightMenu.d.ts","sourceRoot":"","sources":["../../src/components/TopRightMenu.tsx"],"names":[],"mappings":"AAOA,UAAU,iBAAiB;IACzB,WAAW,EAAE,MAAM,CAAA;IACnB,YAAY,CAAC,EAAE,MAAM,GAAG,OAAO,GAAG,QAAQ,GAAG,KAAK,CAAA;IAClD,mBAAmB,CAAC,EAAE,OAAO,CAAA;CAC9B;AAED,wBAAgB,YAAY,CAAC,EAC3B,WAAW,EACX,YAAqB,EACrB,mBAA0B,EAC3B,EAAE,iBAAiB,2CA0GnB;AAED,eAAe,YAAY,CAAA"}
