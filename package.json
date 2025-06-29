@@ -1,0 +1,41 @@
+{
+  "name": "tt-ms-stack",
+  "version": "1.0.0",
+  "description": "TypeScript Microservices Stack",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:auth\" \"npm run dev:user\" \"npm run dev:content\"",
+    "dev:auth": "cd apps/auth-service && npm run dev",
+    "dev:user": "cd apps/user-service && npm run dev", 
+    "dev:content": "cd apps/content-service && npm run dev",
+    "build": "npm run build --workspaces --if-present",
+    "build:auth": "cd apps/auth-service && npm run build",
+    "build:user": "cd apps/user-service && npm run build",
+    "build:content": "cd apps/content-service && npm run build",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
+    "install:all": "npm install",
+    "docker:up": "cd infrastructure/docker && docker-compose up --build",
+    "docker:down": "cd infrastructure/docker && docker-compose down",
+    "docker:logs": "cd infrastructure/docker && docker-compose logs -f",
+    "setup": "./scripts/setup.sh",
+    "deploy:dev": "./scripts/deploy-dev.sh",
+    "deploy:prod": "./scripts/deploy-prod.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
