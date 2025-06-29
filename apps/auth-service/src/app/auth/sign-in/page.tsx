@@ -479,7 +479,7 @@ function PhoneSignInForm({
     onError('')
 
     try {
-      const response = await fetch('/api/auth/phone/request', {
+      const response = await fetch('/api/auth/phone-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -675,10 +675,36 @@ function SocialSignInForm({
     onError('')
 
     try {
-      console.log(`🔐 Attempting ${provider} sign-in...`)
-      await signIn(providerId, { callbackUrl })
+      console.log(`🔐 Attempting ${providerId} sign-in...`)
+      
+      const result = await signIn(providerId, { 
+        callbackUrl,
+        redirect: false
+      })
+
+      console.log(`🔐 SignIn result for ${providerId}:`, result)
+
+      if (result?.error) {
+        console.error(`❌ OAuth error for ${providerId}:`, result.error)
+        
+        if (result.error.includes('OAuthAccountNotLinked')) {
+          onError('This account is already linked to another user. Please use account linking.')
+        } else if (result.error.includes('OAuthCallback')) {
+          onError('Failed to connect to the social provider. Please try again.')
+        } else if (result.error.includes('AccessDenied')) {
+          onError('Access was denied. Please grant permission to continue.')
+        } else {
+          onError(`Failed to sign in with ${providerId}. Please try again.`)
+        }
+      } else if (result?.ok) {
+        console.log(`✅ ${providerId} sign-in successful, redirecting to:`, callbackUrl)
+        window.location.href = callbackUrl
+        return
+      }
     } catch (error) {
+      console.error(`❌ Exception during ${providerId} sign-in:`, error)
       onError('Failed to sign in. Please try again.')
+    } finally {
       setIsLoading(false)
     }
   }

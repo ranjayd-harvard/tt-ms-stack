@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     // Get full user data from database
     const client = await clientPromise
     const users = client.db().collection('users')
+    const accounts = client.db().collection('accounts')
     
     const user = await users.findOne(
       { _id: new ObjectId(token.id as string) },
@@ -39,6 +40,28 @@ export async function GET(req: NextRequest) {
         { status: 404 }
       )
     }
+
+    // 🔥 FIX: Get current linked providers from accounts collection
+    const userAccounts = await accounts.find({
+      userId: token.id as string,
+      type: 'oauth'
+    }).toArray()
+
+    const currentLinkedProviders = userAccounts.map(acc => acc.provider)
+
+    // 🔥 FIX: Update user's linkedProviders if they're out of sync
+    if (JSON.stringify(user.linkedProviders?.sort()) !== JSON.stringify(currentLinkedProviders.sort())) {
+      await users.updateOne(
+        { _id: user._id },
+        { 
+          $set: { 
+            linkedProviders: currentLinkedProviders,
+            updatedAt: new Date()
+          }
+        }
+      )
+      user.linkedProviders = currentLinkedProviders
+    }    
 
     return NextResponse.json({
       user: {

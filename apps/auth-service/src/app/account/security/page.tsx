@@ -540,6 +540,9 @@ function AddSocialModal({
       
       // Refresh the session to get updated user data
       await update()
+
+      // Force refresh of user profile data
+      await fetchUserProfile()
       
       // At this point, if we reach here without errors, consider it successful
       console.log(`✅ ${providerId} account linked successfully`)
