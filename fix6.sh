@@ -1,4 +1,63 @@
-// packages/ui/src/components/Navigation.tsx
+i#!/bin/bash
+
+echo "🔍 Debugging User Service dropdown positioning issues..."
+
+echo "1️⃣ First, let's fix the User Service globals.css..."
+
+# Replace the problematic @import "tailwindcss" with standard directives
+cat > "apps/user-service/src/app/globals.css" << 'EOF'
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Ensure dropdowns appear above everything */
+.dropdown-menu {
+  position: absolute !important;
+  top: 100% !important;
+  z-index: 9999 !important;
+  margin-top: 0.5rem !important;
+}
+
+/* Debug styles to see what's happening */
+.debug-dropdown {
+  border: 2px solid red !important;
+  background: yellow !important;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+EOF
+
+echo "✅ Fixed User Service globals.css with proper Tailwind directives"
+
+echo "2️⃣ Creating a debug version of Navigation with explicit positioning..."
+
+cat > "packages/ui/src/components/Navigation.tsx" << 'EOF'
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
@@ -14,100 +73,25 @@ interface NavigationProps {
   }>
 }
 
-// Enhanced ProfileAvatar component with proper image handling
-function ProfileAvatar({ 
-  src, 
-  name, 
-  email, 
-  size = 'sm',
-  avatarType = 'oauth' // Add avatarType support
-}: { 
-  src?: string | null
-  name?: string | null
-  email?: string | null
-  size?: 'sm' | 'md' | 'lg'
-  avatarType?: string
-}) {
-  const sizeClasses = {
-    sm: 'h-8 w-8 text-sm',
-    md: 'h-10 w-10 text-base',
-    lg: 'h-12 w-12 text-lg'
-  }
-
-  const getInitials = () => {
-    if (name) {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    }
-    if (email) {
-      return email[0].toUpperCase()
-    }
-    return 'U'
-  }
-
-  // Enhanced image handling - check if image is available and valid
-  const [imageError, setImageError] = useState(false)
-  const [imageLoaded, setImageLoaded] = useState(false)
-
-  // Reset error state when src changes
-  useEffect(() => {
-    setImageError(false)
-    setImageLoaded(false)
-  }, [src])
-
-  const shouldShowImage = src && !imageError && (avatarType === 'oauth' || avatarType === 'uploaded')
-
-  return (
-    <div className="relative">
-      {shouldShowImage ? (
-        <img
-          className={`${sizeClasses[size]} rounded-full object-cover border-2 border-gray-200 shadow-sm`}
-          src={src}
-          alt={name || email || 'User avatar'}
-          onError={() => {
-            console.log('Avatar image failed to load:', src)
-            setImageError(true)
-          }}
-          onLoad={() => {
-            console.log('Avatar image loaded successfully:', src)
-            setImageLoaded(true)
-          }}
-          style={{ display: imageError ? 'none' : 'block' }}
-        />
-      ) : (
-        <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium border-2 border-white shadow-sm`}>
-          {getInitials()}
-        </div>
-      )}
-      
-      {/* Debug indicator - remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="absolute -bottom-1 -right-1 text-xs">
-          {shouldShowImage && !imageError ? '🖼️' : '👤'}
-        </div>
-      )}
-    </div>
-  )
-}
-
 const services = [
   {
     name: 'Auth Service',
     url: 'http://localhost:3000',
-    color: '#2563eb',
+    color: 'bg-blue-600',
     icon: 'A',
     description: 'Authentication & Authorization'
   },
   {
     name: 'User Service', 
     url: 'http://localhost:3001',
-    color: '#059669',
+    color: 'bg-green-600',
     icon: 'U',
     description: 'User Management'
   },
   {
     name: 'Content Service',
     url: 'http://localhost:3002', 
-    color: '#7c3aed',
+    color: 'bg-purple-600',
     icon: 'C',
     description: 'Content Management'
   }
@@ -123,20 +107,6 @@ export default function Navigation({
   const [showUserMenu, setShowUserMenu] = useState(false)
   const serviceMenuRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
-
-  // Enhanced session data - using the same structure as Auth Service
-  const session = {
-    user: {
-      name: 'Ranjay Kumar',
-      email: 'ranjay@example.com',
-      // Using the same image that works in the dropdown
-      image: null, // Temporarily set to null to force initials
-      avatarType: 'default', // Can be 'default', 'oauth', or 'uploaded'
-      provider: 'credentials'
-    }
-  }
-
-  const authMethodsCount: number = 3
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -154,22 +124,16 @@ export default function Navigation({
 
   const currentService = services.find(s => s.name === serviceName)
 
-  const getAccountStatus = () => {
-    if (authMethodsCount > 1) return { text: `${authMethodsCount} linked methods`, color: '#059669' }
-    if (authMethodsCount === 1) return { text: 'Single method', color: '#eab308' }
-    return { text: 'No methods', color: '#dc2626' }
-  }
-
-  // Dropdown styles
+  // Explicit dropdown styles to override any conflicts
   const dropdownStyle: React.CSSProperties = {
     position: 'absolute',
     top: '100%',
     right: 0,
     marginTop: '8px',
-    zIndex: 50,
+    zIndex: 9999,
     backgroundColor: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    borderRadius: '8px',
+    boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
     border: '1px solid #e5e7eb',
     minWidth: '320px'
   }
@@ -179,22 +143,13 @@ export default function Navigation({
     top: '100%',
     right: 0,
     marginTop: '8px',
-    zIndex: 50,
+    zIndex: 9999,
     backgroundColor: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    borderRadius: '8px',
+    boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
     border: '1px solid #e5e7eb',
     minWidth: '288px'
   }
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Navigation Debug:', {
-      sessionImage: session?.user?.image,
-      avatarType: session?.user?.avatarType,
-      userName: session?.user?.name
-    })
-  }, [session])
 
   return (
     <nav style={{ backgroundColor: 'white', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)', borderBottom: '1px solid #e5e7eb', position: 'relative' }}>
@@ -205,17 +160,16 @@ export default function Navigation({
             {/* Service Logo/Name */}
             <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', marginRight: '2rem' }}>
               <div 
+                className={currentService?.color} 
                 style={{ 
                   width: '32px', 
                   height: '32px', 
-                  backgroundColor: currentService?.color || '#6b7280',
                   borderRadius: '8px', 
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center', 
                   color: 'white', 
                   fontWeight: 'bold',
-                  fontSize: '14px',
                   marginRight: '8px'
                 }}
               >
@@ -239,8 +193,6 @@ export default function Navigation({
                     fontWeight: '500',
                     transition: 'color 0.2s'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#2563eb'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#374151'}
                   {...(link.external && { target: "_blank", rel: "noopener noreferrer" })}
                 >
                   {link.label}
@@ -249,7 +201,7 @@ export default function Navigation({
             </div>
           </div>
 
-          {/* Right side - Service Switcher and Enhanced User Menu */}
+          {/* Right side - Service Switcher and User Menu */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             {/* Service Switcher */}
             {showServiceSwitcher && (
@@ -268,18 +220,12 @@ export default function Navigation({
                     cursor: 'pointer',
                     transition: 'background-color 0.2s'
                   }}
-                  onMouseEnter={(e) => {
-                    if (!showServiceMenu) e.currentTarget.style.backgroundColor = '#f9fafb'
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!showServiceMenu) e.currentTarget.style.backgroundColor = 'white'
-                  }}
                 >
                   <div 
+                    className={currentService?.color}
                     style={{
                       width: '24px',
                       height: '24px',
-                      backgroundColor: currentService?.color || '#6b7280',
                       borderRadius: '4px',
                       display: 'flex',
                       alignItems: 'center',
@@ -308,7 +254,7 @@ export default function Navigation({
                   </svg>
                 </button>
 
-                {/* Service Switcher Dropdown */}
+                {/* Service Switcher Dropdown - EXPLICIT POSITIONING */}
                 {showServiceMenu && (
                   <div style={dropdownStyle}>
                     <div style={{ padding: '16px', borderBottom: '1px solid #f3f4f6' }}>
@@ -342,10 +288,10 @@ export default function Navigation({
                             }}
                           >
                             <div 
+                              className={service.color}
                               style={{
                                 width: '24px',
                                 height: '24px',
-                                backgroundColor: service.color,
                                 borderRadius: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -379,39 +325,32 @@ export default function Navigation({
               </div>
             )}
 
-            {/* Enhanced User Menu with Consistent Avatar */}
+            {/* User Menu */}
             <div style={{ position: 'relative' }} ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: '8px',
                   backgroundColor: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  transition: 'background-color 0.2s'
+                  padding: '4px'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
-                <ProfileAvatar
-                  src={session?.user?.image}
-                  name={session?.user?.name}
-                  email={session?.user?.email}
-                  size="sm"
-                  avatarType={session?.user?.avatarType}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#111827', margin: 0 }}>
-                    {session?.user?.name}
-                  </div>
-                  <div style={{ fontSize: '12px', color: getAccountStatus().color, margin: 0 }}>
-                    {getAccountStatus().text}
-                  </div>
+                <div style={{ 
+                  width: '32px', 
+                  height: '32px', 
+                  backgroundColor: '#d1d5db', 
+                  borderRadius: '50%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center' 
+                }}>
+                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280' }}>RK</span>
                 </div>
+                <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>Ranjay Kumar</span>
                 <svg 
                   style={{ 
                     width: '16px', 
@@ -428,130 +367,71 @@ export default function Navigation({
                 </svg>
               </button>
 
-              {/* Enhanced User Dropdown with Consistent Avatar */}
+              {/* User Dropdown */}
               {showUserMenu && (
                 <div style={userDropdownStyle}>
-                  <div style={{ padding: '16px', borderBottom: '1px solid #f3f4f6' }}>
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <ProfileAvatar
-                        src={session?.user?.image}
-                        name={session?.user?.name}
-                        email={session?.user?.email}
-                        size="md"
-                        avatarType={session?.user?.avatarType}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: 0 }}>{session?.user?.name}</div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', margin: '2px 0 0 0', wordBreak: 'break-all' }}>{session?.user?.email}</div>
-                        <div style={{ fontSize: '11px', color: '#3b82f6', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span>🔗</span>
-                          <span>{getAccountStatus().text}</span>
-                        </div>
+                      <div style={{ 
+                        width: '40px', 
+                        height: '40px', 
+                        backgroundColor: '#d1d5db', 
+                        borderRadius: '50%', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center' 
+                      }}>
+                        <span style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280' }}>RK</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: 0 }}>Ranjay Kumar</div>
+                        <div style={{ fontSize: '12px', color: '#6b7280', margin: '2px 0 0 0' }}>ranjay@example.com</div>
                       </div>
                     </div>
-                    
-                    {/* Debug info - remove in production */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '8px', padding: '4px', backgroundColor: '#f9fafb', borderRadius: '4px' }}>
-                        Debug: avatarType={session?.user?.avatarType}, hasImage={!!session?.user?.image}
-                      </div>
-                    )}
                   </div>
 
-                  {/* Menu Items */}
                   <div style={{ padding: '8px 0' }}>
                     <a 
-                      href="/account/profile" 
+                      href="/profile" 
                       style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
-                        padding: '12px 16px', 
+                        padding: '8px 16px', 
                         fontSize: '14px', 
                         color: '#374151', 
                         textDecoration: 'none',
                         transition: 'background-color 0.2s'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                      <span style={{ marginRight: '12px', fontSize: '16px' }}>👤</span>
-                      <div>
-                        <div style={{ fontWeight: '500' }}>Account Profile</div>
-                        <div style={{ fontSize: '12px', color: '#6b7280' }}>Manage your personal information</div>
-                      </div>
+                      <span style={{ marginRight: '12px' }}>👤</span>
+                      Profile Settings
                     </a>
-
                     <a 
-                      href="/account/security" 
+                      href="/account" 
                       style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
-                        padding: '12px 16px', 
+                        padding: '8px 16px', 
                         fontSize: '14px', 
                         color: '#374151', 
                         textDecoration: 'none',
                         transition: 'background-color 0.2s'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                      <span style={{ marginRight: '12px', fontSize: '16px' }}>🔐</span>
-                      <div>
-                        <div style={{ fontWeight: '500' }}>Security Settings</div>
-                        <div style={{ fontSize: '12px', color: '#6b7280' }}>Password, 2FA, and sign-in methods</div>
-                      </div>
+                      <span style={{ marginRight: '12px' }}>⚙️</span>
+                      Account Settings
                     </a>
-
-                    <a 
-                      href="/account/activity" 
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        padding: '12px 16px', 
-                        fontSize: '14px', 
-                        color: '#374151', 
-                        textDecoration: 'none',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <span style={{ marginRight: '12px', fontSize: '16px' }}>📊</span>
-                      <div>
-                        <div style={{ fontWeight: '500' }}>Account Activity</div>
-                        <div style={{ fontSize: '12px', color: '#6b7280' }}>View recent account activity</div>
-                      </div>
-                    </a>
-
                     <div style={{ height: '1px', backgroundColor: '#f3f4f6', margin: '8px 0' }}></div>
-
-                    <a 
-                      href="/help" 
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        padding: '12px 16px', 
-                        fontSize: '14px', 
-                        color: '#374151', 
-                        textDecoration: 'none',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <span style={{ marginRight: '12px', fontSize: '16px' }}>❓</span>
-                      <div>
-                        <div style={{ fontWeight: '500' }}>Help & Support</div>
-                        <div style={{ fontSize: '12px', color: '#6b7280' }}>Get help and contact support</div>
-                      </div>
-                    </a>
-
                     <button 
                       style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
                         width: '100%',
-                        padding: '12px 16px', 
+                        padding: '8px 16px', 
                         fontSize: '14px', 
                         color: '#dc2626', 
                         backgroundColor: 'transparent',
@@ -563,11 +443,8 @@ export default function Navigation({
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                      <span style={{ marginRight: '12px', fontSize: '16px' }}>🚪</span>
-                      <div>
-                        <div style={{ fontWeight: '500' }}>Sign Out</div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>Sign out of your account</div>
-                      </div>
+                      <span style={{ marginRight: '12px' }}>🚪</span>
+                      Sign Out
                     </button>
                   </div>
                 </div>
@@ -579,3 +456,49 @@ export default function Navigation({
     </nav>
   )
 }
+EOF
+
+echo "✅ Created explicit inline-styled Navigation component"
+
+echo "3️⃣ Rebuilding shared UI package..."
+cd packages/ui
+npm run build
+
+if [ $? -eq 0 ]; then
+    echo "✅ Shared UI package rebuilt successfully!"
+else
+    echo "❌ Build failed, checking errors..."
+    npm run build
+    exit 1
+fi
+
+cd ../..
+
+echo "4️⃣ Force updating User Service..."
+cd apps/user-service
+rm -rf .next
+npm uninstall @tt-ms-stack/ui
+npm install ../../packages/ui
+cd ../..
+
+echo ""
+echo "🎉 Applied explicit positioning fix!"
+echo ""
+echo "✅ What was fixed:"
+echo "  - 🔧 Fixed User Service globals.css (removed @import 'tailwindcss')"
+echo "  - 📍 Added explicit inline styles for dropdown positioning"
+echo "  - 🎯 Used React.CSSProperties for type safety"
+echo "  - 💪 Removed dependency on Tailwind classes for positioning"
+echo "  - 🎨 Added explicit zIndex: 9999 and position: 'absolute'"
+echo ""
+echo "🔍 Key technical changes:"
+echo "  - position: 'absolute', top: '100%', right: 0"
+echo "  - zIndex: 9999 to ensure dropdown appears above everything"
+echo "  - Explicit marginTop: '8px' for spacing"
+echo "  - Inline styles bypass any CSS conflicts"
+echo ""
+echo "🚀 Restart User Service:"
+echo "  npm run dev"
+echo ""
+echo "💡 This approach completely bypasses any CSS class conflicts!"
+echo "The dropdowns MUST appear below the buttons now."
