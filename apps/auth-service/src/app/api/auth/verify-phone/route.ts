@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { TokenManager } from '@/lib/tokens'
 import { verifyCode } from '@/lib/sms'
 import clientPromise from '@/lib/db'
-import { ObjectId } from 'mongodb'
 
 // CRITICAL: Use the SAME phone formatting function as in enhanced-phone-register
 function formatPhoneNumber(phoneNumber: string, countryCode: string = 'US'): string {

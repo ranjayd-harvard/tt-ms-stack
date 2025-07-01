@@ -18,7 +18,7 @@ interface ProfileUpdateData {
 }
 
 // GET method to fetch detailed user profile
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -130,7 +130,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Prepare update data
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date()
     }
 
@@ -209,10 +209,13 @@ export async function PUT(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Update extended profile error:', error)
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
       { status: 500 }
     )

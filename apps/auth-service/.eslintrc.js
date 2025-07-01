@@ -1,4 +1,6 @@
-rules: {
-    '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-unused-vars': 'warn', // or 'off'
+module.exports = {
+  "rules": {
+    "no-console": "off",
+    "react/prop-types": "off"
   }
+}

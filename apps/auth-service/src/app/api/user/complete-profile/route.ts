@@ -18,7 +18,7 @@ interface ProfileUpdateData {
 }
 
 // GET method to fetch detailed user profile
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -43,10 +43,11 @@ export async function GET(req: NextRequest) {
       ...profile,
       authMethods: profile.authMethods || [],
       stats: {
-        accountAge: profile.stats?.accountAge || 0,
-        totalAuthMethods: profile.stats?.totalAuthMethods || 0,
-        hasLinkedAccounts: profile.stats?.hasLinkedAccounts || false,
-        ...profile.stats
+        // Spread existing stats first, then override with defaults if needed
+        ...profile.stats,
+        accountAge: profile.stats?.accountAge ?? 0,
+        totalAuthMethods: profile.stats?.totalAuthMethods ?? 0,
+        hasLinkedAccounts: profile.stats?.hasLinkedAccounts ?? false
       },
       groupInfo: profile.groupInfo || null
     }
@@ -58,8 +59,15 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Get profile error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
@@ -143,7 +151,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Prepare update data
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date()
     }
 
@@ -222,10 +230,14 @@ export async function PUT(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Update extended profile error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
       { status: 500 }
     )
@@ -315,8 +327,15 @@ export async function PATCH(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Patch profile error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
@@ -324,8 +343,6 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    // FIXED: Import from enhanced auth
-    //const { enhancedAuthOptions as authOptions } = await import('@/lib/enhanced-auth')
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
@@ -413,7 +430,6 @@ export async function DELETE(req: NextRequest) {
 
     console.log(`✅ Account deactivated successfully: ${session.user.id}`)
 
-    // FIXED: Complete JSON response
     return NextResponse.json({
       success: true,
       message: 'Account has been deactivated successfully',
@@ -423,10 +439,14 @@ export async function DELETE(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Account deletion error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
       { status: 500 }
     )

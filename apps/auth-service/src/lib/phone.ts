@@ -1,18 +1,19 @@
-import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js'
+import { parsePhoneNumber, isValidPhoneNumber, CountryCode } from 'libphonenumber-js'
 
 export function formatPhoneNumber(phoneNumber: string, countryCode?: string): string {
   try {
-    const parsed = parsePhoneNumber(phoneNumber, countryCode as any)
+    const parsed = parsePhoneNumber(phoneNumber, countryCode as CountryCode)
     return parsed.format('E.164') // Returns +1234567890 format
   } catch (error) {
-    throw new Error('Invalid phone number format')
+    throw new Error('Invalid phone number format' + error)
   }
 }
 
 export function validatePhoneNumber(phoneNumber: string, countryCode?: string): boolean {
   try {
-    return isValidPhoneNumber(phoneNumber, countryCode as any)
+    return isValidPhoneNumber(phoneNumber, countryCode as CountryCode)
   } catch (error) {
+    console.log('phone number validation issue' + error)
     return false
   }
 }

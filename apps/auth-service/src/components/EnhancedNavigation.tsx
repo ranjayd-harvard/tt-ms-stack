@@ -83,13 +83,21 @@ export default function EnhancedNavigation() {
     }
   }
 
-  // Fallback method using session data (original implementation)
+  // Fallback method using session data (updated to use available fields)
   const getSessionBasedAuthMethodsCount = () => {
     if (!session?.user) return 0
     let count = 0
+    
+    // Only count email if it exists in session
     if (session.user.email) count++
-    if (session.user.phoneNumber) count++
-    if (session.user.linkedProviders?.length) count += session.user.linkedProviders.length
+    
+    // Since phoneNumber and linkedProviders are not in session type,
+    // we'll use hasLinkedAccounts as an indicator
+    if (session.user.hasLinkedAccounts) count++
+    
+    // Minimum of 1 if we have a session (user must have at least one auth method)
+    if (count === 0 && session.user.id) count = 1
+    
     return count
   }
 
@@ -173,7 +181,7 @@ export default function EnhancedNavigation() {
                     name={session.user?.name}
                     email={session.user?.email}
                     size="sm"
-                    avatarType={session.user?.avatarType}
+                    avatarType={session.user?.avatarType as "default" | "oauth" | "uploaded" | undefined}
                     showBadge={false}
                   />
                   <div className="hidden md:block text-left">
@@ -198,7 +206,7 @@ export default function EnhancedNavigation() {
                             name={session.user?.name}
                             email={session.user?.email}
                             size="md"
-                            avatarType={session.user?.avatarType}
+                            avatarType={session.user?.avatarType as "default" | "oauth" | "uploaded" | undefined}
                             showBadge={false}
                           />
                           <div className="flex-1">

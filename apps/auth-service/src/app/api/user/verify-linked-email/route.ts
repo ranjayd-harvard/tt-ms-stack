@@ -1,7 +1,5 @@
 // src/app/api/user/verify-linked-email/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import clientPromise from '@/lib/db'
 import { ObjectId } from 'mongodb'
 import { TokenManager } from '@/lib/tokens'
@@ -32,6 +30,14 @@ export async function POST(req: NextRequest) {
 
     const { userId, email } = tokenData
     console.log('📧 Token verified for email:', email, 'userId:', userId)
+
+    if (!userId || !email) {
+      console.log('📧 Missing userId or email in token data')
+      return NextResponse.json(
+        { error: 'Invalid token data' },
+        { status: 400 }
+      )
+    }
 
     const client = await clientPromise
     const users = client.db().collection('users')
@@ -91,8 +97,15 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Verify linked email error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
@@ -120,6 +133,11 @@ export async function GET(req: NextRequest) {
 
     const { userId, email } = tokenData
     console.log('📧 Token verified for email:', email, 'userId:', userId)
+
+    if (!userId || !email) {
+      console.log('📧 Missing userId or email in token data')
+      return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/account/security?error=invalid-token`)
+    }
 
     const client = await clientPromise
     const users = client.db().collection('users')
@@ -159,6 +177,7 @@ export async function GET(req: NextRequest) {
     console.log('📧 Email verified successfully via GET:', email)
 
     // Redirect to security page with success message
+    // At this point, we know email is defined due to the check above
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/account/security?email_verified=true&email=${encodeURIComponent(email)}`)
 
   } catch (error) {

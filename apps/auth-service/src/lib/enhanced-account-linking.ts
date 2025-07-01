@@ -1,6 +1,6 @@
 // src/lib/enhanced-account-linking.ts
 import clientPromise from './db'
-import { ObjectId } from 'mongodb'
+import { ObjectId, WithId, Document } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 
 export interface LinkingCandidate {
@@ -35,6 +35,30 @@ export interface UserWithGroup {
   isMaster: boolean
   createdAt: Date
   lastSignIn?: Date
+}
+
+// Define a MongoDB User type for consistency
+interface MongoUser extends WithId<Document> {
+  email?: string
+  primaryEmail?: string
+  phoneNumber?: string
+  primaryPhone?: string
+  name?: string
+  password?: string
+  linkedProviders?: string[]
+  registerSource?: string
+  phoneVerified?: boolean
+  image?: string
+  avatarType?: string
+  accountStatus?: string
+  groupId?: string
+  isMaster?: boolean
+  isActive?: boolean
+  createdAt?: Date
+  lastSignIn?: Date
+  linkedEmails?: string[]
+  linkedPhones?: string[]
+  [key: string]: any
 }
 
 export class EnhancedAccountLinkingService {
@@ -77,6 +101,21 @@ export class EnhancedAccountLinkingService {
     return Math.round(((maxLength - matrix[b.length][a.length]) / maxLength) * 100)
   }
 
+  // Extract authentication methods from MongoDB user object
+  private static extractAuthMethods(user: MongoUser): string[] {
+    const methods: string[] = []
+    
+    if (user.password) methods.push('credentials')
+    if (user.phoneNumber && user.phoneVerified) methods.push('phone')
+    if (user.linkedProviders?.includes('google')) methods.push('google')
+    if (user.linkedProviders?.includes('github')) methods.push('github')
+    if (user.registerSource === 'oauth' && !methods.includes('google') && !methods.includes('github')) {
+      methods.push('oauth')
+    }
+    
+    return methods
+  }
+
   // Enhanced candidate finding with confidence scoring
   static async findLinkingCandidates(
     email?: string, 
@@ -87,7 +126,7 @@ export class EnhancedAccountLinkingService {
     const users = await this.getUsersCollection()
     const candidates: Map<string, LinkingCandidate> = new Map()
     
-    const buildQuery = (conditions: any[]) => ({
+    const buildQuery = (conditions: Record<string, unknown>[]) => ({
       $and: [
         { $or: conditions },
         { accountStatus: { $ne: 'merged' } },
@@ -107,26 +146,27 @@ export class EnhancedAccountLinkingService {
       const emailMatches = await users.find(buildQuery(emailConditions)).toArray()
       
       for (const user of emailMatches) {
+        const mongoUser = user as MongoUser
         const matchReasons = ['Email match']
         let confidence = 95
         
         // Boost confidence if exact primary email match
-        if (user.email === email || user.primaryEmail === email) {
+        if (mongoUser.email === email || mongoUser.primaryEmail === email) {
           confidence = 100
           matchReasons.push('Primary email match')
         }
         
-        candidates.set(user._id.toString(), {
-          userId: user._id.toString(),
-          email: user.email || user.primaryEmail,
-          phoneNumber: user.phoneNumber || user.primaryPhone,
-          name: user.name,
-          authMethods: this.extractAuthMethods(user),
+        candidates.set(mongoUser._id.toString(), {
+          userId: mongoUser._id.toString(),
+          email: mongoUser.email || mongoUser.primaryEmail,
+          phoneNumber: mongoUser.phoneNumber || mongoUser.primaryPhone,
+          name: mongoUser.name || '',
+          authMethods: this.extractAuthMethods(mongoUser),
           confidence,
           matchReasons,
-          avatar: user.image,
-          groupId: user.groupId,
-          lastSignIn: user.lastSignIn
+          avatar: mongoUser.image,
+          groupId: mongoUser.groupId,
+          lastSignIn: mongoUser.lastSignIn
         })
       }
     }
@@ -143,36 +183,37 @@ export class EnhancedAccountLinkingService {
       const phoneMatches = await users.find(buildQuery(phoneConditions)).toArray()
       
       for (const user of phoneMatches) {
-        const userId = user._id.toString()
+        const mongoUser = user as MongoUser
+        const userId = mongoUser._id.toString()
         const existing = candidates.get(userId)
         
         if (existing) {
           // User already found by email - boost confidence
           existing.confidence = 100
           existing.matchReasons.push('Phone match')
-          if (user.phoneNumber === phoneNumber || user.primaryPhone === phoneNumber) {
+          if (mongoUser.phoneNumber === phoneNumber || mongoUser.primaryPhone === phoneNumber) {
             existing.matchReasons.push('Primary phone match')
           }
         } else {
           const matchReasons = ['Phone match']
           let confidence = 90
           
-          if (user.phoneNumber === phoneNumber || user.primaryPhone === phoneNumber) {
+          if (mongoUser.phoneNumber === phoneNumber || mongoUser.primaryPhone === phoneNumber) {
             confidence = 95
             matchReasons.push('Primary phone match')
           }
           
           candidates.set(userId, {
             userId,
-            email: user.email || user.primaryEmail,
-            phoneNumber: user.phoneNumber || user.primaryPhone,
-            name: user.name,
-            authMethods: this.extractAuthMethods(user),
+            email: mongoUser.email || mongoUser.primaryEmail,
+            phoneNumber: mongoUser.phoneNumber || mongoUser.primaryPhone,
+            name: mongoUser.name || '',
+            authMethods: this.extractAuthMethods(mongoUser),
             confidence,
             matchReasons,
-            avatar: user.image,
-            groupId: user.groupId,
-            lastSignIn: user.lastSignIn
+            avatar: mongoUser.image,
+            groupId: mongoUser.groupId,
+            lastSignIn: mongoUser.lastSignIn
           })
         }
       }
@@ -193,8 +234,9 @@ export class EnhancedAccountLinkingService {
       }).toArray()
       
       for (const user of nameMatches) {
-        const userId = user._id.toString()
-        const nameSimilarity = this.calculateNameSimilarity(name, user.name)
+        const mongoUser = user as MongoUser
+        const userId = mongoUser._id.toString()
+        const nameSimilarity = this.calculateNameSimilarity(name, mongoUser.name || '')
         
         if (nameSimilarity >= 60) {
           const existing = candidates.get(userId)
@@ -212,15 +254,15 @@ export class EnhancedAccountLinkingService {
             
             candidates.set(userId, {
               userId,
-              email: user.email || user.primaryEmail,
-              phoneNumber: user.phoneNumber || user.primaryPhone,
-              name: user.name,
-              authMethods: this.extractAuthMethods(user),
+              email: mongoUser.email || mongoUser.primaryEmail,
+              phoneNumber: mongoUser.phoneNumber || mongoUser.primaryPhone,
+              name: mongoUser.name || '',
+              authMethods: this.extractAuthMethods(mongoUser),
               confidence: Math.round(confidence),
               matchReasons,
-              avatar: user.image,
-              groupId: user.groupId,
-              lastSignIn: user.lastSignIn
+              avatar: mongoUser.image,
+              groupId: mongoUser.groupId,
+              lastSignIn: mongoUser.lastSignIn
             })
           }
         }
@@ -230,21 +272,6 @@ export class EnhancedAccountLinkingService {
     return Array.from(candidates.values())
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, 8) // Return top 8 matches
-  }
-
-  // Extract authentication methods from user object
-  private static extractAuthMethods(user: any): string[] {
-    const methods: string[] = []
-    
-    if (user.password) methods.push('credentials')
-    if (user.phoneNumber && user.phoneVerified) methods.push('phone')
-    if (user.linkedProviders?.includes('google')) methods.push('google')
-    if (user.linkedProviders?.includes('github')) methods.push('github')
-    if (user.registerSource === 'oauth' && !methods.includes('google') && !methods.includes('github')) {
-      methods.push('oauth')
-    }
-    
-    return methods
   }
 
   // Create account group with master account
@@ -279,7 +306,10 @@ export class EnhancedAccountLinkingService {
 
       return { success: true, groupId }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      }
     }
   }
 
@@ -304,6 +334,10 @@ export class EnhancedAccountLinkingService {
 
       const primaryUser = allUsers.find(u => u._id.toString() === primaryUserId)
       const secondaryUsers = allUsers.filter(u => u._id.toString() !== primaryUserId)
+
+      if (!primaryUser) {
+        return { success: false, error: 'Primary user not found' }
+      }
 
       // Determine group ID
       let groupId = primaryUser.groupId
@@ -338,17 +372,17 @@ export class EnhancedAccountLinkingService {
       if (primaryUser.email) allEmails.add(primaryUser.email)
       if (primaryUser.primaryEmail) allEmails.add(primaryUser.primaryEmail)
       if (primaryUser.linkedEmails) {
-        primaryUser.linkedEmails.forEach(email => allEmails.add(email))
+        primaryUser.linkedEmails.forEach((email: string) => allEmails.add(email))
       }
       
       if (primaryUser.phoneNumber) allPhones.add(primaryUser.phoneNumber)
       if (primaryUser.primaryPhone) allPhones.add(primaryUser.primaryPhone)
       if (primaryUser.linkedPhones) {
-        primaryUser.linkedPhones.forEach(phone => allPhones.add(phone))
+        primaryUser.linkedPhones.forEach((phone: string) => allPhones.add(phone))
       }
 
       if (primaryUser.linkedProviders) {
-        primaryUser.linkedProviders.forEach(provider => allProviders.add(provider))
+        primaryUser.linkedProviders.forEach((provider: string) => allProviders.add(provider))
       }
 
       // Process secondary users data
@@ -356,17 +390,17 @@ export class EnhancedAccountLinkingService {
         if (user.email) allEmails.add(user.email)
         if (user.primaryEmail) allEmails.add(user.primaryEmail)
         if (user.linkedEmails) {
-          user.linkedEmails.forEach(email => allEmails.add(email))
+          user.linkedEmails.forEach((email: string) => allEmails.add(email))
         }
         
         if (user.phoneNumber) allPhones.add(user.phoneNumber)
         if (user.primaryPhone) allPhones.add(user.primaryPhone)
         if (user.linkedPhones) {
-          user.linkedPhones.forEach(phone => allPhones.add(phone))
+          user.linkedPhones.forEach((phone: string) => allPhones.add(phone))
         }
 
         if (user.linkedProviders) {
-          user.linkedProviders.forEach(provider => allProviders.add(provider))
+          user.linkedProviders.forEach((provider: string) => allProviders.add(provider))
         }
 
         // Keep password if primary doesn't have one
@@ -457,7 +491,10 @@ export class EnhancedAccountLinkingService {
 
     } catch (error) {
       console.error('❌ Account merge failed:', error)
-      return { success: false, error: error.message }
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      }
     }
   }
 
@@ -474,25 +511,28 @@ export class EnhancedAccountLinkingService {
       ]
     }).toArray()
 
-    return accounts.map(user => ({
-      _id: user._id,
-      groupId: user.groupId,
-      email: user.email || user.primaryEmail,
-      phoneNumber: user.phoneNumber || user.primaryPhone,
-      name: user.name,
-      authMethods: this.extractAuthMethods(user),
-      isActive: user.accountStatus !== 'merged',
-      isMaster: user.isMaster || false,
-      createdAt: user.createdAt,
-      lastSignIn: user.lastSignIn
-    }))
+    return accounts.map(user => {
+      const mongoUser = user as MongoUser
+      return {
+        _id: mongoUser._id,
+        groupId: mongoUser.groupId || '',
+        email: mongoUser.email || mongoUser.primaryEmail,
+        phoneNumber: mongoUser.phoneNumber || mongoUser.primaryPhone,
+        name: mongoUser.name || '',
+        authMethods: this.extractAuthMethods(mongoUser),
+        isActive: mongoUser.accountStatus !== 'merged',
+        isMaster: mongoUser.isMaster || false,
+        createdAt: mongoUser.createdAt || new Date(),
+        lastSignIn: mongoUser.lastSignIn
+      }
+    })
   }
 
   // Find user by any identifier with group support
   static async findUserByIdentifierWithGroup(email?: string, phoneNumber?: string) {
     const users = await this.getUsersCollection()
     
-    const conditions: any[] = []
+    const conditions: Record<string, unknown>[] = []
     
     if (email) {
       conditions.push(
@@ -597,12 +637,14 @@ export class EnhancedAccountLinkingService {
         return { linked: false, message: `Auto-link failed: ${mergeResult.error}` }
       }
     } catch (error) {
-      return { linked: false, message: `Auto-link error: ${error.message}` }
+      return { 
+        linked: false, 
+        message: `Auto-link error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      }
     }
   }
 
   // Add this method to your EnhancedAccountLinkingService class
-
   static async linkOAuthAccount(params: {
     email: string;
     provider: string;
@@ -644,7 +686,7 @@ export class EnhancedAccountLinkingService {
 
       if (existingUser) {
         // User exists with this email - link the OAuth account
-        const updateData: any = {
+        const updateData: Record<string, unknown> = {
           [`accounts.${provider}`]: {
             providerAccountId,
             provider,
@@ -733,7 +775,7 @@ export class EnhancedAccountLinkingService {
       console.error('❌ linkOAuthAccount error:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }
   }

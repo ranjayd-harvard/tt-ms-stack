@@ -1,9 +1,9 @@
 // src/app/auth/sign-in/page.tsx - Your UI with 2FA support
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { signIn, getProviders, useSession } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 type AuthMethod = 'email' | 'phone' | 'social'
@@ -14,19 +14,32 @@ interface Provider {
   type: string
 }
 
-export default function UnifiedSignIn() {
+// Component that uses useSearchParams
+function UnifiedSignInContent() {
   const { data: session, status } = useSession()
   const [activeMethod, setActiveMethod] = useState<AuthMethod>('email')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [providers, setProviders] = useState<Record<string, Provider>>({})
   
-  const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
 
   useEffect(() => {
-    getProviders().then(setProviders)
+    getProviders().then((res) => {
+      if (res) {
+        // Convert NextAuth providers to our Provider interface
+        const mapped = Object.entries(res).reduce((acc, [key, value]) => {
+          acc[key] = {
+            id: value.id,
+            name: value.name,
+            type: value.type || 'oauth' // fallback if undefined
+          }
+          return acc
+        }, {} as Record<string, Provider>)
+        setProviders(mapped)
+      }
+    })
   }, [])
 
   // Redirect if already signed in
@@ -61,7 +74,6 @@ export default function UnifiedSignIn() {
     }
   ]
 
-  // ADD THE LOADING STATES HERE - RIGHT BEFORE THE MAIN RETURN
   // Show loading while checking authentication status
   if (status === 'loading') {
     return (
@@ -176,10 +188,10 @@ export default function UnifiedSignIn() {
             <div className="flex items-start space-x-3">
               <span className="text-blue-500 text-xl flex-shrink-0">💡</span>
               <div className="text-sm text-blue-700">
-                <p className="font-medium">Can't access your account?</p>
+                <p className="font-medium">Can&apos;t access your account?</p>
                 <p className="mt-1">
                   Try signing in with a different method above. If you have multiple accounts, 
-                  we'll automatically link them together for you!
+                  we&apos;ll automatically link them together for you!
                 </p>
                 <div className="mt-2 flex items-center space-x-4 text-xs">
                   <button
@@ -203,7 +215,7 @@ export default function UnifiedSignIn() {
         {/* Footer */}
         <div className="text-center space-y-4">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/auth/sign-up" className="font-medium text-blue-600 hover:text-blue-500">
               Sign up here
             </Link>
@@ -216,6 +228,42 @@ export default function UnifiedSignIn() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xl">M</span>
+          </div>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Loading...
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Preparing sign in page
+          </p>
+        </div>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading sign in options...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main component wrapped with Suspense
+export default function UnifiedSignIn() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <UnifiedSignInContent />
+    </Suspense>
   )
 }
 
@@ -454,7 +502,7 @@ function EmailSignInForm({
   )
 }
 
-// Phone Sign-In Form Component - Kept exactly the same
+// Phone Sign-In Form Component
 function PhoneSignInForm({ 
   callbackUrl, 
   onError, 
@@ -496,7 +544,8 @@ function PhoneSignInForm({
         onError(data.error || 'Failed to send verification code')
       }
     } catch (error) {
-      onError('An error occurred. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      onError('An error occurred. Please try again.' + errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -522,7 +571,8 @@ function PhoneSignInForm({
         return
       }
     } catch (error) {
-      onError('An error occurred. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      onError('An error occurred. Please try again.' + errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -632,7 +682,7 @@ function PhoneSignInForm({
   )
 }
 
-// Social Sign-In Form Component - Kept exactly the same
+// Social Sign-In Form Component
 function SocialSignInForm({ 
   providers, 
   callbackUrl, 
@@ -738,7 +788,7 @@ function SocialSignInForm({
 
       <div className="mt-6 p-3 bg-gray-50 rounded-lg">
         <p className="text-xs text-gray-600 text-center">
-          We'll automatically link this account if you have an existing account with the same email address.
+          We&apos;ll automatically link this account if you have an existing account with the same email address.
         </p>
       </div>
     </div>

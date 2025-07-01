@@ -87,13 +87,13 @@ export default function Profile() {
                     <dt className="text-sm font-medium text-gray-500">Current provider</dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        session.user?.provider === 'credentials' 
+                        session.user?.registerSource === 'credentials' 
                           ? 'bg-blue-100 text-blue-800'
-                          : session.user?.provider === 'google'
+                          : session.user?.registerSource === 'google'
                           ? 'bg-red-100 text-red-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {session.user?.provider || 'Unknown'}
+                        {session.user?.registerSource || 'Unknown'}
                       </span>
                     </dd>
                   </div>
@@ -129,12 +129,14 @@ export default function Profile() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Phone number</dt>
+                    <dt className="text-sm font-medium text-gray-500">Account Status</dt>
                     <dd className="mt-1 text-sm text-gray-900">
-                      {session.user?.phoneNumber || 'Not provided'}
-                      {session.user?.phoneNumber && (
-                        <span className="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                          Verified
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        Active
+                      </span>
+                      {session.user?.twoFactorEnabled && (
+                        <span className="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          2FA Enabled
                         </span>
                       )}
                     </dd>

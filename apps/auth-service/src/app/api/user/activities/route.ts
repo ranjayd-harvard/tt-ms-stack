@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { enhancedAuthOptions as authOptions } from '@/lib/enhanced-auth'
-import { ActivityTracker, ActivityCategory, ActivityEvent } from '@/lib/activity-tracker'
+import { ActivityTracker, ActivityCategory } from '@/lib/activity-tracker'
 
 export async function GET(req: NextRequest) {
   try {

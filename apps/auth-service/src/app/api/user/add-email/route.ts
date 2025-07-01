@@ -157,7 +157,15 @@ export async function POST(req: NextRequest) {
       }
     } catch (error) {
       console.warn('⚠️ Verification email sending failed:', error)
-      emailError = error.message
+      const errorMessage = error instanceof Error ? error.message : String(error)
+    
+      return NextResponse.json(
+        { 
+          error: 'Internal server error', 
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        },
+        { status: 500 }
+      )
     }
 
     console.log('📧 Email added successfully:', {

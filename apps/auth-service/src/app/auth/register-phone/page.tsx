@@ -4,6 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AccountLinkingModal from '@/components/AccountLinkingModal' // ADD THIS IMPORT
+import { LinkingCandidate } from '@/lib/enhanced-account-linking' // Import the correct type
+
+// Define the type for pending registration data
+interface PendingRegistrationData {
+  name: string
+  phoneNumber: string
+  countryCode: string
+}
 
 export default function RegisterPhone() {
   const router = useRouter()
@@ -18,10 +26,10 @@ export default function RegisterPhone() {
   const [error, setError] = useState('')
   const [registeredPhone, setRegisteredPhone] = useState('')
   
-  // ADD THESE NEW STATE VARIABLES
+  // ADD THESE NEW STATE VARIABLES WITH PROPER TYPING
   const [showLinkingModal, setShowLinkingModal] = useState(false)
-  const [linkingCandidates, setLinkingCandidates] = useState([])
-  const [pendingRegistration, setPendingRegistration] = useState(null)
+  const [linkingCandidates, setLinkingCandidates] = useState<LinkingCandidate[]>([])
+  const [pendingRegistration, setPendingRegistration] = useState<PendingRegistrationData | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -64,7 +72,8 @@ export default function RegisterPhone() {
         setError(data.error || 'An error occurred')
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      setError('An error occurred. Please try again.' + errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -95,7 +104,8 @@ export default function RegisterPhone() {
         setError(data.error || 'Verification failed')
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      setError('An error occurred. Please try again.' + errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -121,14 +131,20 @@ export default function RegisterPhone() {
         setError(data.error || 'Failed to resend code')
       }
     } catch (error) {
-      setError('Failed to resend code. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      setError('Failed to resend code. Please try again.' + errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
-  // ADD THIS NEW FUNCTION
+  // ADD THIS NEW FUNCTION WITH PROPER NULL CHECKING
   const handleMergeAccounts = async (targetUserId: string) => {
+    if (!pendingRegistration) {
+      setError('Registration data not found. Please try again.')
+      return
+    }
+
     try {
       console.log('🔗 Attempting to merge with account:', targetUserId)
       
@@ -152,7 +168,7 @@ export default function RegisterPhone() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            ...pendingRegistration,
+            ...pendingRegistration, // Now TypeScript knows this is not null
             linkedAccount: true
           }),
         })
@@ -170,38 +186,6 @@ export default function RegisterPhone() {
     } catch (error) {
       console.error('Merge failed:', error)
       setError('Failed to link accounts. Please try again.')
-    }
-  }
-
-  // ADD THIS NEW FUNCTION
-  const handleSkipLinking = async () => {
-    setShowLinkingModal(false)
-    setIsLoading(true)
-
-    try {
-      const res = await fetch('/api/auth/register-phone', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...pendingRegistration,
-          skipLinking: true
-        }),
-      })
-
-      const data = await res.json()
-
-      if (res.ok) {
-        setRegisteredPhone(data.phoneNumber)
-        setStep('verify')
-      } else {
-        setError(data.error || 'Registration failed')
-      }
-    } catch (error) {
-      setError('Registration failed. Please try again.')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -314,7 +298,7 @@ export default function RegisterPhone() {
                 </div>
                 <h3 className="mt-2 text-lg font-medium text-gray-900">Check your phone</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  We've sent a 6-digit verification code to<br />
+                  We&apos;ve sent a 6-digit verification code to<br />
                   <span className="font-medium">{registeredPhone}</span>
                 </p>
               </div>
@@ -361,7 +345,7 @@ export default function RegisterPhone() {
                 disabled={isLoading}
                 className="w-full text-center text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50"
               >
-                Didn't receive the code? Resend
+                Didn&apos;t receive the code? Resend
               </button>
 
               <button
@@ -380,7 +364,17 @@ export default function RegisterPhone() {
           isOpen={showLinkingModal}
           onClose={() => setShowLinkingModal(false)}
           candidates={linkingCandidates}
-          onMerge={handleMergeAccounts}
+          currentUserData={{
+            email: formData.name ? undefined : undefined, // No email in phone registration
+            phoneNumber: formData.phoneNumber,
+            name: formData.name,
+            userId: undefined // No userId yet during registration
+          }}
+          onConfirmLinking={async (primaryUserId: string, secondaryUserIds: string[]) => {
+            // Convert the onConfirmLinking format to match our handleMergeAccounts
+            await handleMergeAccounts(primaryUserId)
+          }}
+          isLoading={isLoading}
         />
       </div>
     </div>

@@ -29,7 +29,7 @@ function ProfileAvatar({
   avatarType?: string
 }) {
   const sizeClasses = {
-    sm: 'h-8 w-8 text-sm',
+    sm: 'h-8 w-8 text-sm border-10',
     md: 'h-10 w-10 text-base',
     lg: 'h-12 w-12 text-lg'
   }
@@ -392,6 +392,7 @@ export default function Navigation({
                   cursor: 'pointer',
                   padding: '8px',
                   borderRadius: '8px',
+                  borderColor: 'red',
                   transition: 'background-color 0.2s'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
@@ -408,7 +409,7 @@ export default function Navigation({
                   <div style={{ fontSize: '14px', fontWeight: '500', color: '#111827', margin: 0 }}>
                     {session?.user?.name}
                   </div>
-                  <div style={{ fontSize: '12px', color: getAccountStatus().color, margin: 0 }}>
+                  <div style={{ fontSize: '11px', color: getAccountStatus().color, margin: 0 }}>
                     {getAccountStatus().text}
                   </div>
                 </div>

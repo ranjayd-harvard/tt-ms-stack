@@ -1,7 +1,7 @@
 // lib/auth-client.ts - Shared authentication client for other microservices
 // Compatible with your enhanced-auth.ts configuration
-import { getToken, JWT } from 'next-auth/jwt'
-import { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
+import { NextRequest, NextResponse } from 'next/server'
 
 export interface AuthUser {
   id: string
@@ -11,7 +11,7 @@ export interface AuthUser {
   registerSource?: string
   groupId?: string
   hasLinkedAccounts?: boolean
-  services?: any
+  services?: Record<string, unknown>
 }
 
 export interface AuthResponse {
@@ -27,6 +27,13 @@ export class AuthClient {
   constructor(authServiceUrl?: string, secret?: string) {
     this.authServiceUrl = authServiceUrl || process.env.AUTH_SERVICE_URL || 'http://localhost:3000'
     this.secret = secret || process.env.NEXTAUTH_SECRET || ''
+  }
+
+  /**
+   * Get the auth service URL
+   */
+  getAuthServiceUrl(): string {
+    return this.authServiceUrl
   }
 
   /**
@@ -53,11 +60,14 @@ export class AuthClient {
           registerSource: token.registerSource as string,
           groupId: token.groupId as string,
           hasLinkedAccounts: token.hasLinkedAccounts as boolean,
-          services: token.services,
+          services: token.services as Record<string, unknown> | undefined,
         }
       }
     } catch (error) {
-      return { authenticated: false, error: 'Token verification failed' }
+      return { 
+        authenticated: false, 
+        error: 'Token verification failed: ' + (error instanceof Error ? error.message : 'Unknown error')
+      }
     }
   }
 
@@ -85,7 +95,10 @@ export class AuthClient {
         user: data.user,
       }
     } catch (error) {
-      return { authenticated: false, error: 'Remote verification failed' }
+      return { 
+        authenticated: false, 
+        error: 'Remote verification failed: ' + (error instanceof Error ? error.message : 'Unknown error')
+      }
     }
   }
 
@@ -122,7 +135,10 @@ export class AuthClient {
         user: data.user,
       }
     } catch (error) {
-      return { authenticated: false, error: 'Failed to get user data' }
+      return { 
+        authenticated: false, 
+        error: 'Failed to get user data: ' + (error instanceof Error ? error.message : 'Unknown error')
+      }
     }
   }
 
@@ -193,7 +209,9 @@ export async function authMiddleware(req: NextRequest) {
     })
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: 'Authentication failed' }),
+      JSON.stringify({ 
+        error: 'Authentication failed: ' + (error instanceof Error ? error.message : 'Unknown error')
+      }),
       { 
         status: 401,
         headers: { 'Content-Type': 'application/json' }
@@ -212,12 +230,15 @@ export function useAuthClient() {
       const session = await response.json()
       return session?.user ? { authenticated: true, user: session.user } : { authenticated: false }
     } catch (error) {
-      return { authenticated: false, error: 'Session check failed' }
+      return { 
+        authenticated: false, 
+        error: 'Session check failed: ' + (error instanceof Error ? error.message : 'Unknown error')
+      }
     }
   }
 
   const redirectToAuth = () => {
-    window.location.href = `${authClient.authServiceUrl}/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`
+    window.location.href = `${authClient.getAuthServiceUrl()}/auth/signin?callbackUrl=${encodeURIComponent(window.location.href)}`
   }
 
   return {

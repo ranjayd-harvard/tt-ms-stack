@@ -1,7 +1,8 @@
 // src/app/api/debug/2fa-check/route.ts - Simple debug without auth requirement
 import { NextRequest, NextResponse } from 'next/server'
 import clientPromise from '@/lib/db'
-import speakeasy from 'speakeasy'
+// Type declaration for speakeasy - since @types/speakeasy doesn't exist
+import * as speakeasy from 'speakeasy'
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
         totpVerified,
         isBackupCode,
         isValid: totpVerified || isBackupCode,
-        timeWindow: new Date().getTime() / 1000 / 30 // Current TOTP time window
+        timeWindow: Math.floor(new Date().getTime() / 1000 / 30) // Current TOTP time window
       }
     }
 
@@ -78,8 +79,15 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Debug 2FA error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { 
+        error: 'Internal server error', 
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

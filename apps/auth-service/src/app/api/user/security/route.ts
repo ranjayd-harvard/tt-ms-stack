@@ -4,12 +4,12 @@ import { getServerSession } from 'next-auth'
 import { enhancedAuthOptions as authOptions } from '@/lib/enhanced-auth'
 import clientPromise from '@/lib/db'
 import { ObjectId } from 'mongodb'
-import bcrypt from 'bcryptjs'
-import speakeasy from 'speakeasy'
-import QRCode from 'qrcode'
+// import bcrypt from 'bcryptjs'
+// import speakeasy from 'speakeasy'
+// import QRCode from 'qrcode'
 
 // GET method to fetch security settings
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -91,7 +91,7 @@ export async function PUT(req: NextRequest) {
     const client = await clientPromise
     const users = client.db().collection('users')
     
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date()
     }
 

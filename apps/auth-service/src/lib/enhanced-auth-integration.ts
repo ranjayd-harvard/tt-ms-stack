@@ -1,19 +1,42 @@
-import { EnhancedAccountLinkingService } from './enhanced-account-linking'
+import { EnhancedAccountLinkingService, UserWithGroup } from './enhanced-account-linking'
 import clientPromise from './db'
-import { ObjectId } from 'mongodb'
+import { ObjectId, WithId, Document } from 'mongodb'
+
+// Define a proper interface for user data instead of using index signature
+interface CreateUserData {
+  name: string
+  email?: string
+  phoneNumber?: string
+  password?: string
+  registerSource: string
+  image?: string
+  provider?: string
+  avatarType?: string
+  // Allow additional string properties if needed
+  [key: string]: string | undefined
+}
+
+// Define MongoDB User type to match what we expect from the database
+interface MongoUser extends WithId<Document> {
+  _id: ObjectId
+  name?: string
+  email?: string
+  phoneNumber?: string
+  password?: string
+  registerSource?: string
+  image?: string
+  linkedProviders?: string[]
+  phoneVerified?: boolean
+  groupId?: string
+  isMaster?: boolean
+  createdAt?: Date
+  accountStatus?: string
+  [key: string]: any
+}
 
 export class EnhancedAuthIntegration {
   // Enhanced user creation with automatic linking detection
-  static async createUserWithLinkingCheck(userData: {
-    name: string
-    email?: string
-    phoneNumber?: string
-    password?: string
-    registerSource: string
-    image?: string
-    provider?: string
-    [key: string]: any
-  }) {
+  static async createUserWithLinkingCheck(userData: CreateUserData) {
     const client = await clientPromise
     const users = client.db().collection('users')
     
@@ -34,7 +57,7 @@ export class EnhancedAuthIntegration {
         
         // Verification status
         emailVerified: userData.registerSource === 'oauth' ? true : false,
-        phoneVerified: userData.registerSource === 'phone' ? false : userData.phoneVerified || false,
+        phoneVerified: userData.registerSource === 'phone' ? false : false,
         
         // Linked accounts arrays
         linkedEmails: userData.email ? [userData.email] : [],
@@ -58,7 +81,6 @@ export class EnhancedAuthIntegration {
           registerSource: userData.registerSource
         }]
       }
-
 
       const result = await users.insertOne(newUser)
       const newUserId = result.insertedId.toString()
@@ -173,13 +195,13 @@ export class EnhancedAuthIntegration {
       const user = await users.findOne({ _id: new ObjectId(userId) })
       if (!user) return null
   
-      let linkedAccounts = []
+      let linkedAccounts: UserWithGroup[] = []
       if (user.groupId) {
         linkedAccounts = await EnhancedAccountLinkingService.getGroupAccounts(user.groupId)
       }
   
       // 🔥 Calculate auth methods correctly
-      const authMethods = this.extractUserAuthMethods(user)
+      const authMethods = this.extractUserAuthMethods(user as MongoUser)
       
       // 🔥 Calculate account age in days
       const accountAge = user.createdAt ? 
@@ -208,9 +230,8 @@ export class EnhancedAuthIntegration {
     }
   }
   
-
   // Helper method to add security log entry with request data
-  static async addSecurityLogEntry(userId: string, event: string, details: any = {}, request?: Request) {
+  static async addSecurityLogEntry(userId: string, event: string, details: Record<string, unknown> = {}, request?: Request) {
     const client = await clientPromise
     const users = client.db().collection('users')
     
@@ -232,7 +253,7 @@ export class EnhancedAuthIntegration {
   }
 
   // Extract available authentication methods for a user
-  private static extractUserAuthMethods(user: any): string[] {
+  private static extractUserAuthMethods(user: MongoUser): string[] {
     const methods: string[] = []
     
     // Check for credentials (password-based login)
@@ -262,4 +283,3 @@ export class EnhancedAuthIntegration {
     return methods
   }
 }
-

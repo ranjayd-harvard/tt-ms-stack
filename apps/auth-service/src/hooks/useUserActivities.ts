@@ -8,7 +8,7 @@ export interface UserActivity {
   id: string
   type: string
   action: string
-  details: Record<string, any>
+  details: Record<string, unknown>
   timestamp: Date
   severity: 'low' | 'medium' | 'high' | 'critical'
   category: ActivityCategory
@@ -67,18 +67,28 @@ export function useUserActivities(): UseUserActivitiesResult {
 
       const data = await response.json()
       
-      // Convert timestamp strings back to Date objects
-      const formattedActivities = data.activities.map((activity: any) => ({
+      // Convert timestamp strings back to Date objects with proper type checking
+      const formattedActivities = data.activities.map((activity: Record<string, unknown>) => ({
         ...activity,
-        timestamp: new Date(activity.timestamp)
-      }))
+        timestamp: new Date(
+          typeof activity.timestamp === 'string' || typeof activity.timestamp === 'number' || activity.timestamp instanceof Date
+            ? activity.timestamp
+            : new Date() // fallback to current date if timestamp is invalid
+        )
+      })) as UserActivity[]
 
       setActivities(formattedActivities)
       
       if (data.summary) {
         setSummary({
           ...data.summary,
-          recentLogin: data.summary.recentLogin ? new Date(data.summary.recentLogin) : null
+          recentLogin: data.summary.recentLogin 
+            ? new Date(
+                typeof data.summary.recentLogin === 'string' || typeof data.summary.recentLogin === 'number' || data.summary.recentLogin instanceof Date
+                  ? data.summary.recentLogin
+                  : new Date()
+              )
+            : null
         })
       }
 

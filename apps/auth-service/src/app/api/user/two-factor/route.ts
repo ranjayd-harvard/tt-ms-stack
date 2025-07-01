@@ -7,9 +7,10 @@ import { ObjectId } from 'mongodb'
 import speakeasy from 'speakeasy'
 import QRCode from 'qrcode'
 import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 
 // GET method to get 2FA setup information
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
 
     // Verify password
     if (user.password) {
-      const bcrypt = require('bcryptjs')
+      //const bcrypt = require('bcryptjs')
       const isPasswordValid = await bcrypt.compare(password, user.password)
       if (!isPasswordValid) {
         return NextResponse.json(
@@ -256,7 +257,6 @@ export async function DELETE(req: NextRequest) {
 
     // Verify password
     if (user.password) {
-      const bcrypt = require('bcryptjs')
       const isPasswordValid = await bcrypt.compare(password, user.password)
       if (!isPasswordValid) {
         return NextResponse.json(

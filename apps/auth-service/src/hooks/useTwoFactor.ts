@@ -30,7 +30,7 @@ export function useTwoFactor() {
         setError(data.error || 'Failed to fetch 2FA status')
       }
     } catch (err) {
-      setError('Failed to fetch 2FA status')
+      setError('Failed to fetch 2FA status'  + err)
     } finally {
       setIsLoading(false)
     }
@@ -56,7 +56,7 @@ export function useTwoFactor() {
         return { success: false }
       }
     } catch (err) {
-      setError('Failed to start 2FA setup')
+      setError('Failed to start 2FA setup' + err)
       return { success: false }
     } finally {
       setIsLoading(false)
@@ -87,7 +87,7 @@ export function useTwoFactor() {
         return { success: false }
       }
     } catch (err) {
-      setError('Failed to enable 2FA')
+      setError('Failed to enable 2FA' + err)
       return { success: false }
     } finally {
       setIsLoading(false)
@@ -115,7 +115,7 @@ export function useTwoFactor() {
         return { success: false }
       }
     } catch (err) {
-      setError('Failed to disable 2FA')
+      setError('Failed to disable 2FA' + err)
       return { success: false }
     } finally {
       setIsLoading(false)
@@ -146,7 +146,7 @@ export function useTwoFactor() {
         return { success: false }
       }
     } catch (err) {
-      setError('Failed to regenerate backup codes')
+      setError('Failed to regenerate backup codes' + err)
       return { success: false }
     } finally {
       setIsLoading(false)

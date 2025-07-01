@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { EnhancedAuthIntegration } from '@/lib/enhanced-auth-integration'
 import { sendVerificationCode } from '@/lib/sms'
 import { TokenManager } from '@/lib/tokens'
+import clientPromise from '@/lib/db'
+import { ObjectId } from 'mongodb'
 
 // Phone formatting function
 function formatPhoneNumber(phoneNumber: string, countryCode: string): string {
@@ -158,7 +160,7 @@ export async function POST(req: NextRequest) {
       image: defaultImage,
       registerSource: 'phone',
       avatarType: 'default',
-      phoneVerified: false
+      phoneVerified: 'false'
     })
 
     if (!result.success) {
@@ -217,7 +219,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Prepare base response
-    const response: any = {
+    const response: Record<string, unknown> = {
       success: true,
       message: result.autoLinked 
         ? 'Phone registered and automatically linked with your existing accounts! Please verify your phone number.'
@@ -273,8 +275,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('❌ Enhanced phone registration error:', error)
     
-    // Handle specific error types
-    if (error.message?.includes('duplicate key') || error.message?.includes('E11000')) {
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
+    if (errorMessage.includes('duplicate key') || errorMessage.includes('E11000')) {
       return NextResponse.json(
         { error: 'This phone number is already registered' },
         { status: 409 }
@@ -284,7 +288,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
       { status: 500 }
     )

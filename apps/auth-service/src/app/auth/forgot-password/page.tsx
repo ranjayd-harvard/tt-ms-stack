@@ -34,7 +34,7 @@ export default function ForgotPassword() {
         setError(data.error)
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      setError('An error occurred. Please try again.'+error)
     } finally {
       setIsLoading(false)
     }
@@ -99,7 +99,7 @@ export default function ForgotPassword() {
               <h3 className="mt-4 text-lg font-medium text-gray-900">Check your email</h3>
               <p className="mt-2 text-gray-600">{message}</p>
               <p className="mt-4 text-sm text-gray-500">
-                Didn't receive the email? Check your spam folder or{' '}
+                Didn&apos;t receive the email? Check your spam folder or{' '}
                 <button
                   onClick={() => {
                     setEmailSent(false)
@@ -112,7 +112,7 @@ export default function ForgotPassword() {
                 </button>
               </p>
               <p className="mt-4 text-sm text-gray-500">
-                Didn't receive the email? Check your spam folder or{' '}
+                Didn&apos;t receive the email? Check your spam folder or{' '}
                 <button
                   onClick={() => {
                     setEmailSent(false)

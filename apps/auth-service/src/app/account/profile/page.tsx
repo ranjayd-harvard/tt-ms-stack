@@ -51,6 +51,7 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
   
   const [editData, setEditData] = useState({
     name: '',
@@ -288,7 +289,13 @@ export default function ProfilePage() {
                         name={session?.user?.name}
                         email={session?.user?.email}
                         size="xl"
-                        avatarType={session?.user?.avatarType}
+                        avatarType={
+                          session?.user?.avatarType === 'default' ||
+                          session?.user?.avatarType === 'oauth' ||
+                          session?.user?.avatarType === 'uploaded'
+                            ? session.user.avatarType
+                            : undefined
+                        }
                         showBadge={true}
                         className="border-4 border-white"
                       />

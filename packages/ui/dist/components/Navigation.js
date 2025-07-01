@@ -9,7 +9,7 @@ const react_1 = require("react");
 function ProfileAvatar({ src, name, email, size = 'sm', avatarType = 'oauth' // Add avatarType support
  }) {
     const sizeClasses = {
-        sm: 'h-8 w-8 text-sm',
+        sm: 'h-8 w-8 text-sm border-10',
         md: 'h-10 w-10 text-base',
         lg: 'h-12 w-12 text-lg'
     };
@@ -225,8 +225,9 @@ function Navigation({ serviceName, serviceColor = 'blue', showServiceSwitcher = 
                                             cursor: 'pointer',
                                             padding: '8px',
                                             borderRadius: '8px',
+                                            borderColor: 'red',
                                             transition: 'background-color 0.2s'
-                                        }, onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f9fafb', onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent', children: [(0, jsx_runtime_1.jsx)(ProfileAvatar, { src: session?.user?.image, name: session?.user?.name, email: session?.user?.email, size: "sm", avatarType: session?.user?.avatarType }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: '14px', fontWeight: '500', color: '#111827', margin: 0 }, children: session?.user?.name }), (0, jsx_runtime_1.jsx)("div", { style: { fontSize: '12px', color: getAccountStatus().color, margin: 0 }, children: getAccountStatus().text })] }), (0, jsx_runtime_1.jsx)("svg", { style: {
+                                        }, onMouseEnter: (e) => e.currentTarget.style.backgroundColor = '#f9fafb', onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent', children: [(0, jsx_runtime_1.jsx)(ProfileAvatar, { src: session?.user?.image, name: session?.user?.name, email: session?.user?.email, size: "sm", avatarType: session?.user?.avatarType }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: '14px', fontWeight: '500', color: '#111827', margin: 0 }, children: session?.user?.name }), (0, jsx_runtime_1.jsx)("div", { style: { fontSize: '11px', color: getAccountStatus().color, margin: 0 }, children: getAccountStatus().text })] }), (0, jsx_runtime_1.jsx)("svg", { style: {
                                                     width: '16px',
                                                     height: '16px',
                                                     color: '#9ca3af',

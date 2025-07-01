@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AccountLinkingModal from '@/components/AccountLinkingModal' // ADD THIS IMPORT
+import AccountLinkingModal from '@/components/AccountLinkingModal'
+import { LinkingCandidate } from '@/lib/enhanced-account-linking'
 
 export default function Register() {
   const router = useRouter()
@@ -18,10 +19,9 @@ export default function Register() {
   const [success, setSuccess] = useState('')
   const [registrationComplete, setRegistrationComplete] = useState(false)
   
-  // ADD THESE NEW STATE VARIABLES
+  // ADD THESE NEW STATE VARIABLES WITH PROPER TYPING
   const [showLinkingModal, setShowLinkingModal] = useState(false)
-  const [linkingCandidates, setLinkingCandidates] = useState([])
-  const [pendingRegistration, setPendingRegistration] = useState(null)
+  const [linkingCandidates, setLinkingCandidates] = useState<LinkingCandidate[]>([])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -64,11 +64,10 @@ export default function Register() {
 
       const data = await res.json()
 
-      // ADD THIS LINKING CHECK
-      if (data.requiresLinking) {
-        console.log('🔗 Account linking required:', data.candidates)
-        setLinkingCandidates(data.candidates)
-        setPendingRegistration(data.registrationData)
+      // FIXED: Check for linking suggestions (not requiresLinking)
+      if (data.linkingSuggestion && data.linkingSuggestion.shouldSuggest) {
+        console.log('🔗 Account linking suggested:', data.linkingSuggestion.candidates)
+        setLinkingCandidates(data.linkingSuggestion.candidates || [])
         setShowLinkingModal(true)
         setIsLoading(false)
         return
@@ -87,23 +86,25 @@ export default function Register() {
         setError(data.error || 'An error occurred')
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      setError('An error occurred. Please try again.' + errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
-  // ADD THIS NEW FUNCTION
-  const handleMergeAccounts = async (targetUserId: string) => {
+  // FIXED: Updated function to work with account linking
+  const handleLinkAccounts = async (primaryUserId: string, secondaryUserIds: string[]) => {
     try {
-      console.log('🔗 Attempting to merge with account:', targetUserId)
+      console.log('🔗 Attempting to link accounts:', { primaryUserId, secondaryUserIds })
       
-      const response = await fetch('/api/auth/merge-accounts', {
+      const response = await fetch('/api/auth/account-linking/merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          targetUserId,
-          confirmMerge: true
+          primaryUserId,
+          secondaryUserIds,
+          createNewGroup: true
         })
       })
 
@@ -117,41 +118,8 @@ export default function Register() {
         setError(data.error || 'Failed to link accounts')
       }
     } catch (error) {
-      console.error('Merge failed:', error)
+      console.error('Link failed:', error)
       setError('Failed to link accounts. Please try again.')
-    }
-  }
-
-  // ADD THIS NEW FUNCTION  
-  const handleSkipLinking = async () => {
-    setShowLinkingModal(false)
-    setIsLoading(true)
-
-    try {
-      // Proceed with normal registration
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...pendingRegistration,
-          skipLinking: true
-        }),
-      })
-
-      const data = await res.json()
-
-      if (res.ok) {
-        setSuccess(data.message)
-        setRegistrationComplete(true)
-      } else {
-        setError(data.error || 'Registration failed')
-      }
-    } catch (error) {
-      setError('Registration failed. Please try again.')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -171,7 +139,7 @@ export default function Register() {
               <div className="mt-6 space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
                   <p className="text-sm text-blue-700">
-                    📧 We've sent a verification link to <strong>{formData.email}</strong>
+                    📧 We&apos;ve sent a verification link to <strong>{formData.email}</strong>
                   </p>
                   <p className="text-sm text-blue-600 mt-1">
                     Please check your email and click the verification link to activate your account.
@@ -305,12 +273,19 @@ export default function Register() {
           </div>
         </form>
 
-        {/* ADD THE MODAL HERE - RIGHT BEFORE THE FINAL CLOSING DIV */}
+        {/* FIXED: Updated modal with correct props */}
         <AccountLinkingModal
           isOpen={showLinkingModal}
           onClose={() => setShowLinkingModal(false)}
           candidates={linkingCandidates}
-          onMerge={handleMergeAccounts}
+          currentUserData={{
+            email: formData.email,
+            phoneNumber: undefined,
+            name: formData.name,
+            userId: undefined // No userId yet during registration
+          }}
+          onConfirmLinking={handleLinkAccounts}
+          isLoading={isLoading}
         />
       </div>
     </div>

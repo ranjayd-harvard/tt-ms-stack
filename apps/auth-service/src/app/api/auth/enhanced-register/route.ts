@@ -66,8 +66,8 @@ export async function POST(req: NextRequest) {
       password: hashedPassword,
       image: defaultImage,
       registerSource: 'credentials',
-      avatarType: 'default',
-      linkedProviders: []
+      avatarType: 'default'
+      // linkedProviders is handled automatically by the service
     })
 
     if (!result.success) {
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
 
     // Send verification email
     let emailSent = false
-    let emailError = null
+    let emailError: string | null = null
 
     try {
       const verificationUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${verificationToken}`
@@ -108,16 +108,17 @@ export async function POST(req: NextRequest) {
 
       emailSent = emailResult.success
       if (!emailResult.success) {
-        emailError = emailResult.error
+        emailError = emailResult.error || null
         console.warn('⚠️ Email sending failed:', emailResult.error)
       }
     } catch (error) {
-      console.warn('⚠️ Email sending failed:', error)
-      emailError = error.message
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.warn('⚠️ Email sending failed:', errorMessage)
+      emailError = errorMessage
     }
 
     // Prepare response
-    const response = {
+    const response: Record<string, any> = {
       success: true,
       message: result.autoLinked 
         ? 'Account created and automatically linked with your existing accounts! Please check your email to verify your account.'
@@ -126,7 +127,6 @@ export async function POST(req: NextRequest) {
       requiresVerification: true,
       autoLinked: result.autoLinked,
       groupId: result.groupId,
-      linkingSuggestion: result.linkingSuggestion,
       emailSent,
       emailError: emailError || undefined,
       verificationToken: process.env.NODE_ENV === 'development' ? verificationToken : undefined // Only in dev
@@ -147,8 +147,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('❌ Enhanced registration error:', error)
     
-    // Handle specific error types
-    if (error.message?.includes('duplicate key') || error.message?.includes('E11000')) {
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
+    if (errorMessage.includes('duplicate key') || errorMessage.includes('E11000')) {
       return NextResponse.json(
         { error: 'An account with this email already exists' },
         { status: 409 }
@@ -158,7 +160,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
       { status: 500 }
     )

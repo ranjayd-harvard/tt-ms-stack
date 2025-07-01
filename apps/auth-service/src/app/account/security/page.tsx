@@ -42,7 +42,7 @@ interface UserProfile {
     groupId?: string
   }
   authMethods: string[]
-  linkedAccounts: any[]
+  linkedAccounts: Record<string, unknown>[]
   groupInfo?: {
     groupId: string
     isMaster: boolean
@@ -51,18 +51,24 @@ interface UserProfile {
   }
 }
 
+interface Provider {
+  id: string
+  name: string
+  type: string
+}
+
 // Add Email Modal Component
 function AddEmailModal({ 
   isOpen, 
   onClose, 
   onSuccess, 
-  onError,
+  //onError,
   userProfile 
 }: {
   isOpen: boolean
   onClose: () => void
   onSuccess: (message: string) => void
-  onError: (error: string) => void
+  //onError: (error: string) => void
   userProfile: UserProfile | null
 }) {
   const [email, setEmail] = useState('')
@@ -218,7 +224,7 @@ function AddPhoneModal({
   isOpen, 
   onClose, 
   onSuccess, 
-  onError 
+  //onError 
 }: {
   isOpen: boolean
   onClose: () => void
@@ -298,7 +304,7 @@ function AddPhoneModal({
         setLocalError(data.error || 'Failed to verify phone number')
       }
     } catch (error) {
-      setLocalError('Failed to verify phone number. Please try again.')
+      setLocalError('Failed to verify phone number. Please try again.'+error)
     } finally {
       setIsLoading(false)
     }
@@ -458,25 +464,37 @@ function AddPhoneModal({
 function AddSocialModal({ 
   isOpen, 
   onClose, 
-  onSuccess, 
-  onError 
+  onSuccess,
+  onRefreshProfile 
 }: {
   isOpen: boolean
   onClose: () => void
   onSuccess: (message: string) => void
-  onError: (error: string) => void
+  onRefreshProfile: () => Promise<void>
 }) {
   const { update } = useSession()
-  const [providers, setProviders] = useState<any>({})
+  const [providers, setProviders] = useState<Record<string, Provider>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [localError, setLocalError] = useState('')
-  const [isConnecting, setIsConnecting] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
-      getProviders().then(setProviders)
+      getProviders().then((res) => {
+        if (res) {
+          const mapped = Object.entries(res).reduce((acc, [key, value]) => {
+            acc[key] = {
+              id: value.id,
+              name: value.name,
+              type: value.type || 'oauth' // fallback if undefined
+            }
+            return acc
+          }, {} as Record<string, Provider>)
+          setProviders(mapped)
+        }
+      })
     }
   }, [isOpen])
+  
 
   const getProviderIcon = (providerId: string) => {
     switch (providerId) {
@@ -500,7 +518,7 @@ function AddSocialModal({
 
   const handleSocialConnect = async (providerId: string) => {
     setIsLoading(true)
-    setIsConnecting(true)
+    //setIsConnecting(true)
     setLocalError('')
 
     try {
@@ -542,7 +560,7 @@ function AddSocialModal({
       await update()
 
       // Force refresh of user profile data
-      await fetchUserProfile()
+      await onRefreshProfile()
       
       // At this point, if we reach here without errors, consider it successful
       console.log(`✅ ${providerId} account linked successfully`)
@@ -558,14 +576,13 @@ function AddSocialModal({
       setLocalError('Failed to connect social account. Please try again.')
     } finally {
       setIsLoading(false)
-      setIsConnecting(false)
     }
   }
 
   if (!isOpen) return null
 
   const socialProviders = Object.values(providers).filter(
-    (provider: any) => provider.type === 'oauth'
+    (provider: Provider) => provider.type === 'oauth'
   )
 
   return (
@@ -604,7 +621,7 @@ function AddSocialModal({
               <p className="text-gray-600">No social providers available</p>
             </div>
           ) : (
-            socialProviders.map((provider: any) => (
+            socialProviders.map((provider: Provider) => (
               <button
                 key={provider.id}
                 onClick={() => handleSocialConnect(provider.id)}
@@ -645,6 +662,7 @@ export default function SecurityPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isConnecting, setIsConnecting] = useState(false);
   
   // Modal states
   const [showAddEmailModal, setShowAddEmailModal] = useState(false)
@@ -660,7 +678,7 @@ export default function SecurityPage() {
   const {
     candidates,
     isLoading: isLinkingLoading,
-    error: linkingError,
+    //error: linkingError,
     showLinkingModal,
     linkAccounts,
     setShowLinkingModal,
@@ -669,7 +687,7 @@ export default function SecurityPage() {
 
   const {
     activities,
-    summary,
+    //summary,
     isLoading: isActivitiesLoading,
     refreshActivities
   } = useUserActivities()
@@ -839,7 +857,7 @@ export default function SecurityPage() {
       console.log('🔍 User profile data:', userProfile)
       console.log('🔍 Auth methods from profile:', userProfile.authMethods)
       console.log('🔍 Linked providers:', userProfile.user.linkedProviders)
-      console.log('🔍 Stats:', userProfile.stats || 'No stats object')
+      //console.log('🔍 Stats:', userProfile.stats || 'No stats object')
       
       // Force refresh navigation when profile updates
       refreshNavigationAuthCount()
@@ -871,10 +889,6 @@ export default function SecurityPage() {
     refreshStatus() // Refresh account status
   }
 
-  // Error handler
-  const handleMethodError = (errorMessage: string) => {
-    setError(errorMessage)
-  }
 
   const handleFindAccounts = async () => {
     if (!userProfile?.user) return
@@ -892,7 +906,6 @@ export default function SecurityPage() {
       // 🔥 Use the enhanced success handler
       await handleMethodSuccess('Accounts linked successfully!')
     }
-    return success
   }
 
   const handleAddMethod = (type: 'email' | 'phone' | 'oauth') => {
@@ -990,7 +1003,7 @@ export default function SecurityPage() {
         setError(data.error || 'Failed to remove authentication method')
       }
     } catch (error) {
-      setError('Failed to remove authentication method. Please try again.')
+      setError('Failed to remove authentication method. Please try again.'+error)
     }
   }
 
@@ -1011,7 +1024,7 @@ export default function SecurityPage() {
           setError(data.error || 'Failed to resend verification email')
         }
       } catch (error) {
-        setError('Failed to resend verification email. Please try again.')
+        setError('Failed to resend verification email. Please try again.'+error)
       }
     }
   }
@@ -1036,7 +1049,7 @@ export default function SecurityPage() {
           setError(data.error || 'Failed to remove email')
         }
       } catch (error) {
-        setError('Failed to remove email. Please try again.')
+        setError('Failed to remove email. Please try again.'+error)
       }
     }
   }
@@ -1167,14 +1180,14 @@ export default function SecurityPage() {
                         {!method.verified && method.type === 'email' && (
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => handleResendVerification(method.value, method.type)}
+                              onClick={() => handleResendVerification(method.value, 'email')}
                               className="text-blue-600 hover:text-blue-700 text-xs font-medium"
                               title="Resend verification email"
                             >
                               Resend
                             </button>
                             <button
-                              onClick={() => handleRemoveUnverified(method.value, method.type)}
+                              onClick={() => handleRemoveUnverified(method.value, 'email')}
                               className="text-red-600 hover:text-red-700 text-xs font-medium"
                               title="Remove unverified email"
                             >
@@ -1430,7 +1443,6 @@ export default function SecurityPage() {
           isOpen={showAddEmailModal}
           onClose={() => setShowAddEmailModal(false)}
           onSuccess={handleModalSuccess}
-          onError={handleModalError}
           userProfile={userProfile}
         />
 
@@ -1447,7 +1459,7 @@ export default function SecurityPage() {
           isOpen={showAddSocialModal}
           onClose={() => setShowAddSocialModal(false)}
           onSuccess={handleModalSuccess}
-          onError={handleModalError}
+          onRefreshProfile={fetchUserProfile}
         />
       </div>
     </ProtectedRoute>

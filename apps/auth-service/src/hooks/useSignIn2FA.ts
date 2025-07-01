@@ -67,7 +67,7 @@ export const useSignIn2FA = () => {
 
   const signInWithCredentials = async (
     formData: SignInFormData,
-    callbackUrl: string = '/dashboard'
+    //callbackUrl: string = '/dashboard'
   ): Promise<SignInResult> => {
     setIsLoading(true)
 

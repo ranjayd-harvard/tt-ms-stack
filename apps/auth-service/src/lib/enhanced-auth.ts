@@ -12,6 +12,7 @@ import { verifyCode } from './sms'
 import { EnhancedAuthIntegration } from './enhanced-auth-integration'
 import { ActivityTracker } from './activity-tracker'
 import bcrypt from 'bcryptjs'
+import speakeasy from 'speakeasy'
 
 // Format phone number function (same as used in registration)
 function formatPhoneNumber(phoneNumber: string, countryCode: string = 'US'): string {
@@ -31,6 +32,14 @@ function formatPhoneNumber(phoneNumber: string, countryCode: string = 'US'): str
     return `+1${cleaned.substring(1)}`
   }
   return `${prefix}${cleaned}`
+}
+
+// Helper function to extract request metadata from NextAuth request
+function extractRequestMetadata(req: any): { ip?: string; userAgent?: string } {
+  return {
+    ip: req?.headers?.['x-forwarded-for'] || req?.headers?.['x-real-ip'] || 'unknown',
+    userAgent: req?.headers?.['user-agent'] || 'unknown'
+  }
 }
 
 export const enhancedAuthOptions: NextAuthOptions = {
@@ -60,17 +69,20 @@ export const enhancedAuthOptions: NextAuthOptions = {
       }
     }),
     CredentialsProvider({
-      name: 'credentials',
+      id: 'credentials',
+      name: 'Email & Password',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
         twoFactorCode: { label: '2FA Code', type: 'text' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         console.log('🔍 Credentials authorize called')
         if (!credentials?.email || !credentials?.password) {
           return null
         }
+
+        const requestMetadata = extractRequestMetadata(req)
 
         // Use enhanced authentication to find user with group support
         const authResult = await EnhancedAuthIntegration.authenticateUserWithGroup({
@@ -89,7 +101,7 @@ export const enhancedAuthOptions: NextAuthOptions = {
               email: credentials.email,
               provider: 'credentials'
             },
-            req
+            requestMetadata
           )
           return null
         }
@@ -116,21 +128,23 @@ export const enhancedAuthOptions: NextAuthOptions = {
               actualProvider: user.registerSource,
               attemptedProvider: 'credentials'
             },
-            req
+            requestMetadata
           )
           throw new Error(`This email is registered with ${user.registerSource}. Please use ${user.registerSource} to sign in.`)
         }
 
         if (!user.password) {
+          // Track failed login attempt - no password set
           await ActivityTracker.track(
             user._id.toString(),
             'auth_failed_login',
             'Failed login attempt - no password set',
             { 
               reason: 'no_password', 
-              email: credentials.email 
+              email: credentials.email,
+              provider: 'credentials'
             },
-            req
+            requestMetadata
           )
           return null
         }
@@ -138,61 +152,59 @@ export const enhancedAuthOptions: NextAuthOptions = {
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
         
         if (!isPasswordValid) {
+          // Track failed login attempt - invalid password
           await ActivityTracker.track(
             user._id.toString(),
             'auth_failed_login',
             'Failed login attempt - invalid password',
             { 
               reason: 'invalid_password', 
-              email: credentials.email 
+              email: credentials.email,
+              provider: 'credentials'
             },
-            req
+            requestMetadata
           )
           return null
         }
 
-        // Check if 2FA is enabled for this user
-        if (user.twoFactorEnabled && user.twoFactorSecret) {
-          const twoFactorCode = credentials.twoFactorCode
-          console.log('🔍 DEBUG: 2FA Code received:', twoFactorCode)
-
-          if (!twoFactorCode) {
-            console.log('❌ DEBUG: No 2FA code provided, throwing 2FA_REQUIRED')
-            throw new Error('2FA_REQUIRED')
+        // 2FA validation if enabled
+        if (user.twoFactorEnabled) {
+          if (!credentials.twoFactorCode) {
+            throw new Error('2FA code required')
           }
 
-          // Verify 2FA code
-          console.log('🔍 DEBUG: Attempting TOTP verification...')
-          const verified = speakeasy.totp.verify({
-            secret: user.twoFactorSecret,
-            encoding: 'base32',
-            token: twoFactorCode,
-            window: 2
-          })
-          console.log('🔍 DEBUG: TOTP verification result:', verified)
-
-          if (verified) {
-            console.log('✅ DEBUG: TOTP verification successful!')
-            // TOTP is valid, continue with authentication
-          } else {
-            // Check backup codes
-            console.log('🔍 DEBUG: TOTP failed, checking backup codes...')
-            if (user.backupCodes && user.backupCodes.includes(twoFactorCode.toUpperCase())) {
-              console.log('✅ DEBUG: Backup code valid!')
-              // Remove used backup code
-              const client = await clientPromise
-              const users = client.db().collection('users')
-              await users.updateOne(
-                { _id: user._id },
-                { $pull: { backupCodes: twoFactorCode.toUpperCase() } }
-              )
+          // Verify 2FA code using TOTP first
+          if (user.twoFactorSecret) {
+            const isValidTOTP = speakeasy.totp.verify({
+              secret: user.twoFactorSecret,
+              encoding: 'base32',
+              token: credentials.twoFactorCode.replace(/\s+/g, ''),
+              window: 2
+            })
+            
+            if (isValidTOTP) {
+              console.log('✅ DEBUG: TOTP validation successful')
+              // TOTP is valid, continue with authentication
             } else {
-              console.log('❌ DEBUG: Both TOTP and backup code failed')
-              throw new Error('Invalid 2FA code')
+              // Check backup codes
+              console.log('🔍 DEBUG: TOTP failed, checking backup codes...')
+              if (user.backupCodes && user.backupCodes.includes(credentials.twoFactorCode.toUpperCase())) {
+                console.log('✅ DEBUG: Backup code valid!')
+                // Remove used backup code
+                const client = await clientPromise
+                const users = client.db().collection('users')
+                await users.updateOne(
+                  { _id: user._id },
+                  { $pull: { backupCodes: credentials.twoFactorCode.toUpperCase() } }
+                )
+              } else {
+                console.log('❌ DEBUG: Both TOTP and backup code failed')
+                throw new Error('Invalid 2FA code')
+              }
             }
+            
+            console.log('✅ DEBUG: 2FA validation passed, continuing...')
           }
-          
-          console.log('✅ DEBUG: 2FA validation passed, continuing...')
         }
 
         // Update user activity through Enhanced Auth Integration
@@ -200,9 +212,6 @@ export const enhancedAuthOptions: NextAuthOptions = {
         console.log('✅ DEBUG: Authentication successful, returning user')
 
         // Successful authentication
-
-        
-        // Make sure you return the user object like this:
         return {
           id: user._id.toString(),
           email: user.email,
@@ -231,6 +240,8 @@ export const enhancedAuthOptions: NextAuthOptions = {
             console.log('❌ Missing phone number or code')
             return null
           }
+
+          const requestMetadata = extractRequestMetadata(req)
     
           // Format the phone number consistently
           const formattedPhoneNumber = formatPhoneNumber(credentials.phoneNumber)
@@ -252,7 +263,7 @@ export const enhancedAuthOptions: NextAuthOptions = {
                 phoneNumber: formattedPhoneNumber,
                 provider: 'phone'
               },
-              req
+              requestMetadata
             )
             return null
           }
@@ -271,7 +282,7 @@ export const enhancedAuthOptions: NextAuthOptions = {
                 reason: 'phone_not_verified', 
                 phoneNumber: formattedPhoneNumber 
               },
-              req
+              requestMetadata
             )
             throw new Error('Phone number is not verified')
           }
@@ -297,7 +308,7 @@ export const enhancedAuthOptions: NextAuthOptions = {
                 phoneNumber: formattedPhoneNumber,
                 error: verificationResult.error
               },
-              req
+              requestMetadata
             )
             throw new Error(verificationResult.error || 'Invalid or expired verification code')
           }
@@ -320,9 +331,9 @@ export const enhancedAuthOptions: NextAuthOptions = {
             linkedEmails: user.linkedEmails || [],
             linkedPhones: user.linkedPhones || [],
             linkedProviders: user.linkedProviders || [],
-            hasLinkedAccounts: authResult.hasLinkedAccounts,
+            hasLinkedAccounts: authResult.hasLinkedAccounts || false,
             twoFactorEnabled: user.twoFactorEnabled || false
-          }
+          } as const
     
         } catch (error) {
           console.error('❌ Phone provider error:', error)
@@ -334,49 +345,7 @@ export const enhancedAuthOptions: NextAuthOptions = {
 
   // CRITICAL: Clean callbacks section
   callbacks: {
-    // async signIn({ user, account, profile, credentials }) {
-    //   console.log('🔓 SignIn callback triggered')
-    //   try {
-    //     if (account?.provider === 'google' || account?.provider === 'github') {
-    //       const client = await clientPromise
-    //       const users = client.db().collection('users')
-    //       const accounts = client.db().collection('accounts')
-          
-    //       const existingUser = await users.findOne({ email: user.email })
-          
-    //       if (existingUser) {
-    //         // 🔥 FIX: Update linkedProviders array when linking social account
-    //         await users.updateOne(
-    //           { _id: existingUser._id },
-    //           { 
-    //             $addToSet: { 
-    //               linkedProviders: account.provider // Add provider if not already present
-    //             },
-    //             $set: {
-    //               lastLoginAt: new Date(),
-    //               updatedAt: new Date()
-    //             }
-    //           }
-    //         )
-
-    //         if (user.id) {
-    //           await EnhancedAuthIntegration.updateUserActivity(user.id)
-    //           const method = account?.provider || 'credentials'
-    //           await ActivityTracker.trackSignIn(user.id, method)
-    //           console.log(`🔓 Sign-in tracked for user ${user.id} via ${method}`)
-    //         }
-            
-    //         console.log(`✅ Updated linkedProviders for user ${existingUser._id} with ${account.provider}`)
-    //       }
-    //     }
-        
-    //     return true
-    //   } catch (error) {
-    //     console.error('SignIn callback error:', error)
-    //     return false
-    //   }
-    // },
-    async signIn({ user, account, profile, isNewUser }) {
+    async signIn({ user, account }) {
       console.log('🔓 SignIn callback triggered', { 
         userId: user?.id, 
         provider: account?.provider, 
@@ -401,11 +370,11 @@ export const enhancedAuthOptions: NextAuthOptions = {
             } else if (account?.id === 'credentials') {
               method = 'credentials'
             } else {
-              method = account?.id || 'credentials'
+              method = (typeof account?.id === 'string' ? account.id : null) || 'credentials'
             }
           } else {
             // Fallback - try to determine from user data
-            if (user.registerSource) {
+            if (typeof user.registerSource === 'string') {
               method = user.registerSource
             }
           }
@@ -419,7 +388,6 @@ export const enhancedAuthOptions: NextAuthOptions = {
         if (account?.provider === 'google' || account?.provider === 'github') {
           const client = await clientPromise
           const users = client.db().collection('users')
-          const accounts = client.db().collection('accounts')
           
           const existingUser = await users.findOne({ email: user.email })
           
@@ -455,7 +423,7 @@ export const enhancedAuthOptions: NextAuthOptions = {
     },
         
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       console.log('🔑 JWT callback triggered:', { hasUser: !!user, hasToken: !!token })
       
       if (user) {
@@ -504,18 +472,6 @@ export const enhancedAuthOptions: NextAuthOptions = {
       console.log('👤 Session callback returning:', session)
       return session
     },
-
-    async signOut({ session, token }) {
-      try {
-        const userId = session?.user?.id || token?.sub as string
-        if (userId) {
-          await ActivityTracker.trackSignOut(userId)
-          console.log(`🔒 Sign-out tracked for user ${userId}`)
-        }
-      } catch (error) {
-        console.error('❌ SignOut event error:', error)
-      }
-    },
   },
 
   // Session configuration
@@ -529,11 +485,16 @@ export const enhancedAuthOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       console.log('🔓 NextAuth signIn event:', { userId: user.id, provider: account?.provider })
     },
-    async session({ session, token }) {
-      console.log('👤 NextAuth session event triggered')
-    },
-    async jwt({ token, user }) {
-      console.log('🔑 NextAuth jwt event triggered')
+    async signOut({ session, token }) {
+      try {
+        const userId = session?.user?.id || (token?.sub as string)
+        if (userId) {
+          await ActivityTracker.trackSignOut(userId)
+          console.log(`🔒 Sign-out tracked for user ${userId}`)
+        }
+      } catch (error) {
+        console.error('❌ SignOut event error:', error)
+      }
     },
   },
 
@@ -558,7 +519,7 @@ declare module 'next-auth' {
     phoneNumber?: string
     groupId?: string
     linkedEmails?: string[]
-    linkedPhones?: any[]
+    linkedPhones?: string[]
     linkedProviders?: string[]
     hasLinkedAccounts?: boolean
   }

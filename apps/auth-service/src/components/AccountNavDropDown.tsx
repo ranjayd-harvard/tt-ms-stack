@@ -19,7 +19,7 @@ interface AccountNavDropdownProps {
   currentPage?: 'profile' | 'security' | 'settings' | 'activity'
 }
 
-export default function AccountNavDropdown({ onRefreshProfile, currentPage }: AccountNavDropdownProps) {
+export default function AccountNavDropdown({ onRefreshProfile }: AccountNavDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()

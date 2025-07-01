@@ -16,6 +16,11 @@ export interface VerifyCodeOptions {
   code: string
 }
 
+// Helper function to check if error has specific properties
+function isTwilioError(error: unknown): error is { code: number; message: string } {
+  return typeof error === 'object' && error !== null && 'code' in error && 'message' in error
+}
+
 // Send verification code using Twilio Verify (recommended)
 export async function sendVerificationCode(phoneNumber: string) {
   try {
@@ -53,22 +58,29 @@ export async function sendVerificationCode(phoneNumber: string) {
   } catch (error) {
     console.error('📱 SMS Error Details:', error)
     
-    // Handle specific errors
-    if (error.code === 30034) {
-      return { 
-        success: false, 
-        error: 'Phone number not configured for business messaging. Please use Twilio Verify Service.' 
+    // Handle specific errors with proper type checking
+    if (isTwilioError(error)) {
+      if (error.code === 30034) {
+        return { 
+          success: false, 
+          error: 'Phone number not configured for business messaging. Please use Twilio Verify Service.' 
+        }
       }
+      
+      if (error.code === 60204) {
+        return {
+          success: false,
+          error: 'Twilio Verify configuration error. Please check your service settings.'
+        }
+      }
+      
+      return { success: false, error: error.message }
     }
     
-    if (error.code === 60204) {
-      return {
-        success: false,
-        error: 'Twilio Verify configuration error. Please check your service settings.'
-      }
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown SMS error occurred' 
     }
-    
-    return { success: false, error: error.message }
   }
 }
 
@@ -98,16 +110,23 @@ export async function verifyCode(phoneNumber: string, code: string) {
   } catch (error) {
     console.error('📱 Code verification failed:', error)
     
-    // Handle common verification errors
-    if (error.code === 60202) {
-      return { success: false, error: 'Invalid verification code' }
+    // Handle common verification errors with proper type checking
+    if (isTwilioError(error)) {
+      if (error.code === 60202) {
+        return { success: false, error: 'Invalid verification code' }
+      }
+      
+      if (error.code === 60203) {
+        return { success: false, error: 'Verification code has expired' }
+      }
+      
+      return { success: false, error: error.message }
     }
     
-    if (error.code === 60203) {
-      return { success: false, error: 'Verification code has expired' }
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown verification error occurred' 
     }
-    
-    return { success: false, error: error.message }
   }
 }
 
@@ -124,7 +143,10 @@ export async function sendSMS({ to, message }: SMSOptions) {
     return { success: true, sid: result.sid }
   } catch (error) {
     console.error('📱 SMS sending failed:', error)
-    return { success: false, error: error.message }
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown SMS sending error occurred' 
+    }
   }
 }
 

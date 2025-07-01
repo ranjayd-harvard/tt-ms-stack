@@ -17,8 +17,14 @@ export async function POST(req: NextRequest) {
       code: result.code // Only for debugging - remove in production
     })
   } catch (error) {
-    return NextResponse.json({
-      error: error.message
-    }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
+    return NextResponse.json(
+      { 
+        error: 'Internal server error', 
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
+      { status: 500 }
+    )
   }
 }

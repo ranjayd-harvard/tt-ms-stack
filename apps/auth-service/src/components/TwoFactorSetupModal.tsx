@@ -92,7 +92,7 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
                   onClick={() => setShowManualEntry(!showManualEntry)}
                   className="text-sm text-blue-600 hover:text-blue-800 mt-2"
                 >
-                  Can't scan? Enter manually
+                  Can&apos;t scan? Enter manually
                 </button>
                 
                 {showManualEntry && (
@@ -216,7 +216,7 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
               onClick={handleFinish}
               className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
             >
-              ✅ I've Saved My Backup Codes
+              ✅ I&apos;ve Saved My Backup Codes
             </button>
           </>
         )}

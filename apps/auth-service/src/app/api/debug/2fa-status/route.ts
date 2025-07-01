@@ -6,7 +6,7 @@ import clientPromise from '@/lib/db'
 import { ObjectId } from 'mongodb'
 import speakeasy from 'speakeasy'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -59,8 +59,13 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Debug 2FA status error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { 
+        error: 'Internal server error', 
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
@@ -120,8 +125,14 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Test 2FA code error:', error)
+
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { 
+        error: 'Internal server error', 
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

@@ -37,11 +37,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate reset token (shorter expiry for security)
+    // Parameters: identifier, type, expiresInMinutes, userId
     const resetToken = await TokenManager.createToken(
-      user._id.toString(),
-      email,
-      'password_reset',
-      1 // 1 hour
+      email,                    // identifier (email)
+      'password_reset',         // type
+      60,                       // expiresInMinutes (1 hour)
+      user._id.toString()       // userId (optional)
     )
 
     // Send reset email
@@ -67,8 +68,15 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     console.error('Forgot password error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

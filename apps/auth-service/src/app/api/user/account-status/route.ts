@@ -1,5 +1,5 @@
 // src/app/api/user/account-status/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { enhancedAuthOptions as authOptions } from '@/lib/enhanced-auth'
 import clientPromise from '@/lib/db'
@@ -22,7 +22,7 @@ export interface AccountStatus {
 }
 
 // GET method to fetch account status
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     

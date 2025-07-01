@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function VerifyEmail() {
+// Separate component that uses useSearchParams
+function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -38,7 +39,7 @@ export default function VerifyEmail() {
         }
       } catch (error) {
         setStatus('error')
-        setMessage('An error occurred while verifying your email')
+        setMessage(`An error occurred while verifying your email: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     }
 
@@ -111,5 +112,35 @@ export default function VerifyEmail() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Email Verification
+          </h2>
+        </div>
+        <div className="mt-8 bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading verification page...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main component wrapped with Suspense
+export default function VerifyEmail() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VerifyEmailContent />
+    </Suspense>
   )
 }

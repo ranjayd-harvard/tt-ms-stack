@@ -4,9 +4,19 @@ import { getServerSession } from 'next-auth'
 import { enhancedAuthOptions as authOptions } from '@/lib/enhanced-auth' // FIXED: Use enhanced auth
 import clientPromise from '@/lib/db'
 import { ObjectId } from 'mongodb'
+import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
+
+// Interface for security log entries
+interface SecurityLogEntry {
+  event: string
+  timestamp: Date
+  ip?: string
+  userAgent?: string
+}
 
 // GET method to get detailed 2FA status
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -39,12 +49,12 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Find 2FA related security events
-    const twoFactorEvents = user.securityLog?.filter(log => 
+    // Find 2FA related security events with proper typing
+    const twoFactorEvents = (user.securityLog as SecurityLogEntry[] || []).filter((log: SecurityLogEntry) => 
       log.event === '2fa_enabled' || 
       log.event === '2fa_disabled' || 
       log.event === '2fa_backup_codes_generated'
-    ) || []
+    )
 
     const status = {
       enabled: user.twoFactorEnabled || false,
@@ -62,8 +72,15 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Get 2FA status error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
@@ -111,7 +128,6 @@ export async function POST(req: NextRequest) {
 
     // Verify password
     if (user.password) {
-      const bcrypt = require('bcryptjs')
       const isPasswordValid = await bcrypt.compare(password, user.password)
       if (!isPasswordValid) {
         return NextResponse.json(
@@ -122,8 +138,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate new backup codes
-    const crypto = require('crypto')
-    const backupCodes = []
+    const backupCodes: string[] = []
     for (let i = 0; i < 10; i++) {
       backupCodes.push(crypto.randomBytes(4).toString('hex').toUpperCase())
     }
@@ -164,8 +179,15 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Generate backup codes error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

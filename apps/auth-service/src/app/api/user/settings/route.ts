@@ -37,7 +37,7 @@ interface UserSettings {
 }
 
 // GET method to fetch user settings
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -104,8 +104,15 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Get settings error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
@@ -197,8 +204,15 @@ export async function PUT(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Update settings error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
@@ -236,12 +250,15 @@ export async function PATCH(req: NextRequest) {
     const client = await clientPromise
     const users = client.db().collection('users')
     
-    // Create update object for the specific section
-    const updateObject = {}
+    // Create update object for the specific section with proper typing
+    const updateObject: Record<string, any> = {
+      updatedAt: new Date()
+    }
+    
+    // Build the nested update paths
     Object.keys(updates).forEach(key => {
       updateObject[`settings.${section}.${key}`] = updates[key]
     })
-    updateObject['updatedAt'] = new Date()
 
     const updateResult = await users.updateOne(
       { _id: new ObjectId(session.user.id) },
@@ -266,15 +283,22 @@ export async function PATCH(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Patch settings error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
 }
 
 // DELETE method to reset settings to defaults
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -313,8 +337,15 @@ export async function DELETE(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Reset settings error:', error)
+    
+    // Handle specific error types with proper type checking
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

@@ -1,11 +1,12 @@
 // src/app/auth/verify-linked-email/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function VerifyLinkedEmail() {
+// Component that uses useSearchParams
+function VerifyLinkedEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying')
@@ -51,7 +52,7 @@ export default function VerifyLinkedEmail() {
       }
     } catch (error) {
       setStatus('error')
-      setMessage('An error occurred during verification')
+      setMessage(`An error occurred during verification: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -138,5 +139,53 @@ export default function VerifyLinkedEmail() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xl">📧</span>
+          </div>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Email Verification
+          </h2>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Loading verification page...
+            </h3>
+            <p className="text-gray-600">
+              Preparing email verification
+            </p>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Need help?{' '}
+            <Link href="/support" className="font-medium text-blue-600 hover:text-blue-500">
+              Contact Support
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main component wrapped with Suspense
+export default function VerifyLinkedEmail() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VerifyLinkedEmailContent />
+    </Suspense>
   )
 }

@@ -15,8 +15,8 @@ export default function TwoFactorManagement() {
     isLoading, 
     error, 
     fetchStatus, 
-    disable2FA, 
-    regenerateBackupCodes 
+    // disable2FA, 
+    // regenerateBackupCodes 
   } = useTwoFactor()
 
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function TwoFactorManagement() {
             <ul className="text-xs text-blue-800 space-y-1">
               <li>• Use apps like Google Authenticator, Authy, or 1Password</li>
               <li>• Save your backup codes in a secure location</li>
-              <li>• Don't share your 2FA codes with anyone</li>
+              <li>• Don&apos;t share your 2FA codes with anyone</li>
               <li>• Consider having multiple authenticator devices</li>
             </ul>
           </div>
@@ -397,7 +397,7 @@ function BackupCodesModal({ isOpen, onClose, onSuccess }: {
               onClick={handleFinish}
               className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
             >
-              ✅ I've Saved My Backup Codes
+              ✅ I&apos;ve Saved My Backup Codes
             </button>
           </>
         )}

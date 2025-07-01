@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
 }
 
 // PUT method to resend verification code for current user's phone
-export async function PUT(req: NextRequest) {
+export async function PUT() {
   try {
     const session = await getServerSession(authOptions)
     
@@ -240,7 +240,7 @@ export async function PUT(req: NextRequest) {
 }
 
 // DELETE method to remove phone number from account
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
   try {
     const session = await getServerSession(authOptions)
     

@@ -7,7 +7,7 @@ export interface ActivityEvent {
   userId: string
   type: ActivityType
   action: string
-  details: Record<string, any>
+  details: Record<string, unknown>
   metadata: {
     ip?: string
     userAgent?: string
@@ -58,7 +58,7 @@ export class ActivityTracker {
     userId: string,
     type: ActivityType,
     action: string,
-    details: Record<string, any> = {},
+    details: Record<string, unknown> = {},
     request?: Request | { ip?: string; userAgent?: string }
   ): Promise<void> {
     try {
@@ -123,7 +123,7 @@ export class ActivityTracker {
     try {
       const activities = await this.getActivitiesCollection()
       
-      const query: any = { userId }
+      const query: Record<string, unknown> = { userId }
       
       if (options.category) query.category = options.category
       if (options.type) query.type = options.type
@@ -184,16 +184,27 @@ export class ActivityTracker {
       categories.forEach(cat => summary.byCategory[cat] = 0)
       severities.forEach(sev => summary.bySeverity[sev] = 0)
 
-      // Process activities
+      // Process activities with proper type checking
       for (const activity of allActivities) {
-        summary.byCategory[activity.category]++
-        summary.bySeverity[activity.severity]++
+        // Type check and cast the activity properties
+        const activityCategory = activity.category as ActivityCategory
+        const activitySeverity = activity.severity as ActivityEvent['severity']
+        const activityType = activity.type as ActivityType
         
-        if (activity.type === 'auth_signin' && (!summary.recentLogin || activity.timestamp > summary.recentLogin)) {
+        // Only increment if the values are valid
+        if (categories.includes(activityCategory)) {
+          summary.byCategory[activityCategory]++
+        }
+        
+        if (severities.includes(activitySeverity)) {
+          summary.bySeverity[activitySeverity]++
+        }
+        
+        if (activityType === 'auth_signin' && (!summary.recentLogin || activity.timestamp > summary.recentLogin)) {
           summary.recentLogin = activity.timestamp
         }
         
-        if (activity.category === 'security') {
+        if (activityCategory === 'security') {
           summary.securityEvents++
         }
       }
@@ -313,12 +324,12 @@ export class ActivityTracker {
     await this.track(userId, 'profile_updated', 'Profile updated', { fields }, request)
   }
 
-  static async trackSecurityEvent(userId: string, action: string, details: Record<string, any>, request?: Request) {
+  static async trackSecurityEvent(userId: string, action: string, details: Record<string, unknown>, request?: Request) {
     const type = `security_${action}` as ActivityType
     await this.track(userId, type, `Security: ${action}`, details, request)
   }
 
-  static async trackAccountEvent(userId: string, action: string, details: Record<string, any>, request?: Request) {
+  static async trackAccountEvent(userId: string, action: string, details: Record<string, unknown>, request?: Request) {
     const type = `account_${action}` as ActivityType
     await this.track(userId, type, `Account: ${action}`, details, request)
   }

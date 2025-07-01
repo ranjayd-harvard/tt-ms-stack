@@ -88,8 +88,14 @@ export async function POST(req: NextRequest) {
     )
   } catch (error) {
     console.error('🔐 Phone login error:', error)
+
+    const errorMessage = error instanceof Error ? error.message : String(error)
+
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }

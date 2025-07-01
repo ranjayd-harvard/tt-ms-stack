@@ -12,6 +12,10 @@ export interface TokenData {
   attempts?: number
 }
 
+export interface TokenDoc extends TokenData {
+  createdAt: Date;
+}
+
 export class TokenManager {
   private static async getTokensCollection() {
     const client = await clientPromise
@@ -52,8 +56,7 @@ export class TokenManager {
     
     await tokens.deleteMany(query)
 
-    // Create new token
-    const tokenDoc: any = {
+    const tokenDoc: TokenDoc = {
       type,
       token,
       expires,
@@ -81,7 +84,14 @@ export class TokenManager {
   ): Promise<{ valid: boolean; userId?: string; email?: string; phoneNumber?: string; error?: string; attemptsLeft?: number }> {
     const tokens = await this.getTokensCollection()
     
-    const query: any = { token, type }
+    // Create a more flexible query type that allows phoneNumber and email properties
+    const query: { 
+      token: string; 
+      type: TokenData['type'];
+      phoneNumber?: string;
+      email?: string;
+    } = { token, type }
+    
     if (identifier && type.includes('phone')) {
       query.phoneNumber = identifier
     } else if (identifier && !type.includes('phone')) {

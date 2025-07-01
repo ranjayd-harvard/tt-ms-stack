@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function ResetPassword() {
+// Component that uses useSearchParams
+function ResetPasswordContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [token, setToken] = useState('')
@@ -64,7 +65,7 @@ export default function ResetPassword() {
         setError(data.error)
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      setError(`An error occurred. Please try again. ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }
@@ -174,5 +175,38 @@ export default function ResetPassword() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Reset your password
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Loading reset form...
+          </p>
+        </div>
+        <div className="mt-8 bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading password reset form...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main component wrapped with Suspense
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }

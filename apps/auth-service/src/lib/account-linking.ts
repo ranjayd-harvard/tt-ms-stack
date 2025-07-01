@@ -170,7 +170,10 @@ export class AccountLinkingService {
 
     } catch (error) {
       console.error('❌ Merge failed:', error)
-      return { success: false, error: error.message }
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      }
     }
   }
 
@@ -178,7 +181,7 @@ export class AccountLinkingService {
   static async findUserByAnyIdentifier(email?: string, phoneNumber?: string) {
     const users = await this.getUsersCollection()
     
-    const query: any = {
+    const query: Record<string, unknown> = {
       accountStatus: { $ne: 'merged' }
     }
 

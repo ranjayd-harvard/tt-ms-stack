@@ -31,7 +31,8 @@ export default function AccountGroupManager({ className }: AccountGroupManagerPr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: session.user.email,
-          phoneNumber: session.user.phoneNumber,
+          // Note: phoneNumber is not available in session type, so we exclude it
+          // The API should handle finding candidates by email alone
           excludeUserId: session.user.id
         })
       })

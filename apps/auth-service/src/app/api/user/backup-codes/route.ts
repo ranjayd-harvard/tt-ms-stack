@@ -8,7 +8,7 @@ import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 
 // GET method to get remaining backup codes count
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     

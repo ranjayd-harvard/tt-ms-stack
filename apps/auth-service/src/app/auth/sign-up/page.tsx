@@ -44,7 +44,20 @@ export default function UnifiedSignUp() {
   } = useAccountLinking()
 
   useEffect(() => {
-    getProviders().then(setProviders)
+    getProviders().then((res) => {
+      if (res) {
+        // Convert NextAuth providers to our Provider interface
+        const mapped = Object.entries(res).reduce((acc, [key, value]) => {
+          acc[key] = {
+            id: value.id,
+            name: value.name,
+            type: value.type || 'oauth' // fallback if undefined
+          }
+          return acc
+        }, {} as Record<string, Provider>)
+        setProviders(mapped)
+      }
+    })
   }, [])
 
   const methods = [
@@ -85,110 +98,94 @@ export default function UnifiedSignUp() {
         router.push('/dashboard')
       }, 2000)
     }
-    return success
   }
 
   const handleSkipLinking = () => {
     setShowLinkingModal(false)
-    setSuccess('Account created successfully! Redirecting to your dashboard...')
-    setTimeout(() => {
-      router.push('/dashboard')
-    }, 2000)
+    setSuccess('Account created successfully! Please check your email to verify your account.')
+    resetState()
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xl">M</span>
-          </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Join MyApp! 🚀
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Create your account and start linking multiple sign-in methods
-          </p>
-        </div>
-
-        {/* Success Message */}
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex">
-              <span className="text-green-400">✅</span>
-              <div className="ml-3">
-                <p className="text-sm text-green-800">{success}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex">
-              <span className="text-red-400">⚠️</span>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!success && (
+        {!success ? (
           <>
+            {/* Header */}
+            <div className="text-center">
+              <div className="mx-auto h-12 w-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xl">✨</span>
+              </div>
+              <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+                Join us today! 🚀
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Create your account in seconds using your preferred method
+              </p>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex">
+                  <span className="text-red-400">⚠️</span>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Linking Error */}
+            {linkingError && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex">
+                  <span className="text-orange-400">🔗</span>
+                  <div className="ml-3">
+                    <p className="text-sm text-orange-800">{linkingError}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Method Selector */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-900 text-center mb-4">
-                  How would you like to sign up?
-                </h3>
-                
-                <div className="grid grid-cols-1 gap-3">
-                  {methods.map((method) => (
-                    <button
-                      key={method.id}
-                      onClick={() => {
-                        setActiveMethod(method.id as SignUpMethod)
-                        setError('')
-                      }}
-                      className={`relative p-4 border-2 rounded-lg transition-all duration-200 text-left ${
-                        activeMethod === method.id
-                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-100'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">{method.icon}</span>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium text-gray-900">{method.label}</span>
-                            {method.recommended && (
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                                Recommended
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">{method.description}</p>
-                        </div>
-                        <div className={`w-4 h-4 rounded-full border-2 transition-colors ${
-                          activeMethod === method.id
-                            ? 'border-blue-500 bg-blue-500'
-                            : 'border-gray-300'
-                        }`}>
-                          {activeMethod === method.id && (
-                            <div className="w-full h-full rounded-full bg-white scale-50"></div>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+              <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
+                {methods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => {
+                      setActiveMethod(method.id as SignUpMethod)
+                      setError('')
+                    }}
+                    className={`flex-1 py-3 px-2 rounded-md text-sm font-medium transition-all duration-200 relative ${
+                      activeMethod === method.id
+                        ? 'bg-white text-blue-600 shadow-sm ring-1 ring-blue-100'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center space-y-1">
+                      <span className="text-lg">{method.icon}</span>
+                      <span className="font-medium">{method.label}</span>
+                      {method.recommended && (
+                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded-full">
+                          ⭐
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Active Method Description */}
+              <div className="text-center mb-6">
+                <p className="text-sm text-gray-600">
+                  {methods.find(m => m.id === activeMethod)?.description}
+                </p>
               </div>
 
               {/* Dynamic Form Content */}
-              <div className="min-h-[300px]">
+              <div className="min-h-[400px]">
                 {activeMethod === 'email' && (
                   <EmailSignUpForm 
                     onError={setError}
@@ -202,7 +199,6 @@ export default function UnifiedSignUp() {
                   <PhoneSignUpForm 
                     onError={setError}
                     onSuccess={setSuccess}
-                    onLinkingSuggestion={handleLinkingSuggestion}
                     isLoading={isLoading}
                     setIsLoading={setIsLoading}
                   />
@@ -217,14 +213,14 @@ export default function UnifiedSignUp() {
                 )}
               </div>
 
-              {/* Account Linking Info */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+              {/* Benefits Section */}
+              <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
                 <div className="flex items-start space-x-3">
-                  <span className="text-blue-500 text-xl flex-shrink-0">🔗</span>
+                  <span className="text-blue-500 text-xl flex-shrink-0">🎯</span>
                   <div className="text-sm text-blue-700">
-                    <p className="font-medium">Smart Account Linking</p>
+                    <p className="font-medium">Smart Account Management</p>
                     <p className="mt-1">
-                      If you have existing accounts, we'll automatically detect and suggest linking them. 
+                      We automatically detect and link your accounts across different sign-in methods. 
                       This lets you sign in with email, phone, or social accounts seamlessly!
                     </p>
                   </div>
@@ -246,6 +242,34 @@ export default function UnifiedSignUp() {
               </div>
             </div>
           </>
+        ) : (
+          /* Success State */
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+              <span className="text-green-600 text-2xl">🎉</span>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome aboard!</h3>
+            <p className="text-gray-600 mb-6">{success}</p>
+            
+            <div className="space-y-4">
+              <Link
+                href="/auth/sign-in"
+                className="block w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Sign In to Your Account
+              </Link>
+              <button
+                onClick={() => {
+                  setSuccess('')
+                  setError('')
+                  resetState()
+                }}
+                className="block w-full text-gray-600 hover:text-gray-800 text-sm"
+              >
+                Create Another Account
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Account Linking Modal */}
@@ -257,7 +281,7 @@ export default function UnifiedSignUp() {
             email: '', // Will be filled by the form component
             phoneNumber: '',
             name: '',
-            userId: newUserId
+            userId: newUserId ?? undefined // Convert null to undefined
           }}
           onConfirmLinking={handleLinkAccounts}
           isLoading={isLinkingLoading}
@@ -328,10 +352,11 @@ function EmailSignUpForm({
           onSuccess('Account created successfully! Please check your email to verify your account.')
         }
       } else {
-        onError(data.error || 'Failed to create account')
+        onError(data.error || 'Registration failed')
       }
     } catch (error) {
-      onError('An error occurred. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      onError('Registration failed. Please try again.' + errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -382,7 +407,7 @@ function EmailSignUpForm({
           value={formData.password}
           onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
           className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-          placeholder="Create a password (min 6 characters)"
+          placeholder="Create a password (min. 6 characters)"
           disabled={isLoading}
         />
       </div>
@@ -403,19 +428,22 @@ function EmailSignUpForm({
         />
       </div>
 
-      <div className="flex items-start space-x-2">
+      <div className="flex items-center">
         <input
           id="terms"
           type="checkbox"
           required
-          className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300"
-          disabled={isLoading}
+          className="h-4 w-4 text-blue-600 rounded border-gray-300"
         />
-        <label htmlFor="terms" className="text-sm text-gray-600">
+        <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
           I agree to the{' '}
-          <Link href="/terms" className="text-blue-600 hover:text-blue-500">Terms of Service</Link>
-          {' '}and{' '}
-          <Link href="/privacy" className="text-blue-600 hover:text-blue-500">Privacy Policy</Link>
+          <Link href="/terms" className="text-blue-600 hover:text-blue-500">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link href="/privacy" className="text-blue-600 hover:text-blue-500">
+            Privacy Policy
+          </Link>
         </label>
       </div>
 
@@ -441,13 +469,11 @@ function EmailSignUpForm({
 function PhoneSignUpForm({ 
   onError, 
   onSuccess, 
-  onLinkingSuggestion,
-  isLoading,
-  setIsLoading
+  isLoading, 
+  setIsLoading 
 }: {
   onError: (error: string) => void
   onSuccess: (message: string) => void
-  onLinkingSuggestion: (suggestion: any, userId: string) => void
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
 }) {
@@ -463,7 +489,7 @@ function PhoneSignUpForm({
     e.preventDefault()
     setIsLoading(true)
     onError('')
-  
+
     try {
       const response = await fetch('/api/auth/enhanced-phone-register', {
         method: 'POST',
@@ -474,28 +500,17 @@ function PhoneSignUpForm({
           countryCode: formData.countryCode
         })
       })
-  
+
       const data = await response.json()
-      console.log('📱 Registration response:', data) // Debug log
-  
+
       if (response.ok) {
-        if (data.autoLinked) {
-          onSuccess('Phone registered and automatically linked! Please verify your phone number.')
-        // } else if (data.linkingSuggestion && data.linkingSuggestion.shouldSuggest) {
-        //   // Handle linking suggestions
-        //   console.log('🔗 Showing linking suggestion')
-        //   onLinkingSuggestion(data.linkingSuggestion, data.userId)
-        } else {
-          // Normal flow - proceed to verification
-          console.log('📱 Proceeding to verification step')
-          setStep('verify')
-        }
+        setStep('verify')
       } else {
-        onError(data.error || 'Failed to register phone number')
+        onError(data.error || 'Failed to send verification code')
       }
     } catch (error) {
-      console.error('📱 Phone registration error:', error)
-      onError('An error occurred. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      onError('Failed to send verification code.' + errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -505,51 +520,27 @@ function PhoneSignUpForm({
     e.preventDefault()
     setIsLoading(true)
     onError('')
-  
+
     try {
-      // First, verify the phone number
       const response = await fetch('/api/auth/verify-phone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: formData.phoneNumber,
-          code: formData.verificationCode,
-          countryCode: formData.countryCode
+          code: formData.verificationCode
         })
       })
-  
+
       const data = await response.json()
-  
+
       if (response.ok) {
-        // Verification successful! Now automatically sign the user in
-        console.log('📱 Phone verified successfully, signing in...')
-        
-        const signInResult = await signIn('phone', {
-          phoneNumber: formData.phoneNumber,
-          code: formData.verificationCode,
-          redirect: false, // Don't redirect automatically
-        })
-  
-        if (signInResult?.ok) {
-          onSuccess('Phone verified and signed in successfully! Welcome! 🎉')
-          // Redirect to dashboard after a brief delay
-          setTimeout(() => {
-            window.location.href = '/dashboard'
-          }, 1500)
-        } else {
-          // Verification worked but sign-in failed - still a success
-          onSuccess('Phone verified successfully! Please sign in to continue.')
-          // Redirect to sign-in page with success message
-          setTimeout(() => {
-            window.location.href = '/auth/sign-in?message=phone-verified'
-          }, 2000)
-        }
+        onSuccess('Phone verified successfully! You can now sign in.')
       } else {
-        onError(data.error || 'Invalid verification code')
+        onError(data.error || 'Verification failed')
       }
     } catch (error) {
-      console.error('📱 Verification error:', error)
-      onError('An error occurred. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      onError('Verification failed.' + errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -558,12 +549,12 @@ function PhoneSignUpForm({
   if (step === 'verify') {
     return (
       <form onSubmit={handleVerifySubmit} className="space-y-4">
-        <div className="text-center mb-4">
-          <div className="text-4xl mb-2">📱</div>
+        <div className="text-center mb-6">
+          <div className="text-4xl mb-3">📱</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Verify Your Phone</h3>
           <p className="text-sm text-gray-600">
-            We sent a verification code to
+            We sent a code to {formData.phoneNumber}
           </p>
-          <p className="font-medium text-gray-900">{formData.phoneNumber}</p>
         </div>
 
         <div>
@@ -594,11 +585,11 @@ function PhoneSignUpForm({
               <span>Verifying...</span>
             </div>
           ) : (
-            'Verify & Complete Registration'
+            'Verify & Complete Sign Up'
           )}
         </button>
 
-        <div className="text-center space-y-2">
+        <div className="text-center">
           <button
             type="button"
             onClick={() => setStep('phone')}
@@ -606,9 +597,6 @@ function PhoneSignUpForm({
           >
             ← Change phone number
           </button>
-          <div className="text-xs text-gray-500">
-            Didn't receive the code? Check your messages or try again
-          </div>
         </div>
       </form>
     )
@@ -659,20 +647,6 @@ function PhoneSignUpForm({
             disabled={isLoading}
           />
         </div>
-      </div>
-
-      <div className="flex items-start space-x-2">
-        <input
-          id="terms-phone"
-          type="checkbox"
-          required
-          className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300"
-          disabled={isLoading}
-        />
-        <label htmlFor="terms-phone" className="text-sm text-gray-600">
-          I agree to receive SMS messages and accept the{' '}
-          <Link href="/terms" className="text-blue-600 hover:text-blue-500">Terms of Service</Link>
-        </label>
       </div>
 
       <button
