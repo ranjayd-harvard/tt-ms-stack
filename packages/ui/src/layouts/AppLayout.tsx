@@ -1,11 +1,9 @@
-'use client'
-
-import { ReactNode } from 'react'
+import React from 'react'
 import Navigation from '../components/Navigation'
 import Footer from '../components/Footer'
 
 export interface AppLayoutProps {
-  children: ReactNode
+  children: React.ReactNode
   serviceName: string
   serviceColor?: 'blue' | 'green' | 'purple' | 'red'
   showServiceSwitcher?: boolean
@@ -15,6 +13,9 @@ export interface AppLayoutProps {
     external?: boolean
   }>
   showFooter?: boolean
+  companyName?: string
+  companyLogo?: string
+  showServiceLinksInFooter?: boolean
 }
 
 export default function AppLayout({
@@ -23,10 +24,14 @@ export default function AppLayout({
   serviceColor = 'blue',
   showServiceSwitcher = true,
   customNavLinks = [],
-  showFooter = true
+  showFooter = true,
+  companyName = "TT-MS-Stack",
+  companyLogo,
+  showServiceLinksInFooter = true
 }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Navigation */}
       <Navigation 
         serviceName={serviceName}
         serviceColor={serviceColor}
@@ -34,11 +39,22 @@ export default function AppLayout({
         customLinks={customNavLinks}
       />
       
-      <main className="flex-1 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 w-full">
-        {children}
+      {/* Main Content */}
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          {children}
+        </div>
       </main>
       
-      {showFooter && <Footer serviceName={serviceName} />}
+      {/* Footer */}
+      {showFooter && (
+        <Footer 
+          serviceName={serviceName}
+          showServiceLinks={showServiceLinksInFooter}
+          companyName={companyName}
+          companyLogo={companyLogo}
+        />
+      )}
     </div>
   )
 }
