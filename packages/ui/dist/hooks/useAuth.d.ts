@@ -1,13 +1,9 @@
 export declare function useAuth(): {
-    session: import("next-auth").Session | null;
-    status: "authenticated" | "loading" | "unauthenticated";
+    session: any;
+    status: any;
     isLoading: boolean;
     isAuthenticated: boolean;
-    user: {
-        name?: string | null;
-        email?: string | null;
-        image?: string | null;
-    } | undefined;
+    user: any;
     redirectToAuth: (callbackUrl?: string) => void;
     redirectToSignOut: () => void;
 };

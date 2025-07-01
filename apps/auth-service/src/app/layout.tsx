@@ -1,10 +1,9 @@
 // apps/auth-service/src/app/layout.tsx
-import '@tt-ms-stack/ui/src/styles/globals.css'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from './providers/auth-provider'
 import { AppLayout } from '@tt-ms-stack/ui'
 import { Navigation }  from '@tt-ms-stack/ui'
-import './globals.css'
+import "@tt-ms-stack/ui/globals.css";
 
 const inter = Inter({ subsets: ['latin'] })
 
