@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import { AuthProvider } from './providers/auth-provider'
 import { AppLayout } from '@tt-ms-stack/ui'
 import { Navigation }  from '@tt-ms-stack/ui'
-import './globals.css';
+import '@tt-ms-stack/ui/src/styles/globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,7 +21,18 @@ export default function RootLayout({
     <html lang="en" className="auth-theme">
       <body className={`${inter.className} auth-theme`}>
         <AuthProvider>
+          <AppLayout
+              serviceName="Auth Service"
+              serviceColor="blue"
+              showServiceSwitcher={true}
+              customNavLinks={[
+                { href: '/dashboard', label: 'Dashboard' },
+                { href: '/admin', label: 'Admin Panel' }
+              ]}
+              showFooter={false}
+            >
               {children}
+          </AppLayout>
         </AuthProvider>
       </body>
     </html>

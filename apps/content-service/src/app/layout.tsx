@@ -1,4 +1,4 @@
-import './globals.css'
+import '@tt-ms-stack/ui/src/styles/globals.css'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from './providers/auth-provider'
 
