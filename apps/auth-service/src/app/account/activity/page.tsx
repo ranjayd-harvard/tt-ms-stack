@@ -1,13 +1,20 @@
 // src/app/account/activity/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AccountNavDropdown from '@/components/AccountNavDropDown'
 import { useUserActivities, getActivityIcon, getSeverityColor, getCategoryColor, formatTimeAgo, UserActivity } from '@/hooks/useUserActivities'
 import { ActivityCategory } from '@/lib/activity-tracker'
 
 export default function UserActivityPage() {
+  // FIXED: Safe session handling for SSR
+  const sessionResult = useSession()
+  const session = sessionResult?.data
+  const status = sessionResult?.status || 'loading'
+  const [mounted, setMounted] = useState(false) // ADD mounted state  
+
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all')
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
   
@@ -18,6 +25,31 @@ export default function UserActivityPage() {
     error,
     fetchActivities
   } = useUserActivities()
+
+  // ADD mounted tracking
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // ADD loading check for SSR
+  if (!mounted || status === 'loading') {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
+  }  
 
   const handleCategoryFilter = (category: ActivityCategory | 'all') => {
     setSelectedCategory(category)
@@ -57,6 +89,20 @@ export default function UserActivityPage() {
   }
 
   const activityGroups = groupActivitiesByDate(filteredActivities)
+
+  // Add loading check for SSR
+  if (!mounted) {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading activities...</span>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
+  }
 
   return (
     <ProtectedRoute>

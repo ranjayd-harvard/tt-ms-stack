@@ -9,6 +9,14 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  // Ensure proper handling of client-side code during SSR
+  transpilePackages: ['next-auth'],
+  // Disable static optimization for pages that use authentication
+  async redirects() {
+    return []
+  },
+  // Configure output for proper SSR
+  output: 'standalone',
 }
 
 module.exports = nextConfig

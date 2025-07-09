@@ -1,14 +1,13 @@
-// apps/auth-service/src/app/layout.tsx
+import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { AuthProvider } from './providers/auth-provider'
+import './globals.css'
+import { Providers } from '@/components/Providers'
 import { AppLayout } from '@tt-ms-stack/ui'
-import { Navigation }  from '@tt-ms-stack/ui'
-import '@tt-ms-stack/ui/src/styles/globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata = {
-  title: 'Auth Service - TT-MS-Stack',
+export const metadata: Metadata = {
+  title: 'Auth Service',
   description: 'Authentication microservice',
 }
 
@@ -18,9 +17,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="auth-theme">
-      <body className={`${inter.className} auth-theme`}>
-        <AuthProvider>
+    <html lang="en">
+      <body className={inter.className}>
+        <Providers>
           <AppLayout
               serviceName="Auth Service"
               serviceColor="blue"
@@ -33,7 +32,7 @@ export default function RootLayout({
             >
               {children}
           </AppLayout>
-        </AuthProvider>
+        </Providers>
       </body>
     </html>
   )

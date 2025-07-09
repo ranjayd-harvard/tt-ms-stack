@@ -2,9 +2,33 @@
 
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useSession } from 'next-auth/react'
+import { useState, useEffect } from 'react'
 
 export default function Dashboard() {
-  const { data: session } = useSession()
+  // FIXED: Safe session handling for SSR
+  const sessionResult = useSession()
+  const session = sessionResult?.data
+  const status = sessionResult?.status || 'loading'
+  
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Single loading check that handles both mounting and session loading
+  if (!mounted || status === 'loading') {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading dashboard...</span>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
+  } 
 
   return (
     <ProtectedRoute>

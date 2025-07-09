@@ -1,54 +1,29 @@
-export default function HomePage() {
+export default function Home() {
   return (
-    <div className="main-content">
-      <h1 className="page-title">User Management Dashboard</h1>
-      
-      <div className="dashboard-grid">
-        {/* Manage Users Card */}
-        <div className="dashboard-card">
-          <div className="card-icon">
-            👥
-          </div>
-          <h3 className="card-title">Manage Users</h3>
-          <p className="card-description">
-            View and manage user accounts, roles, and permissions.
+    <div className="px-4 py-6 sm:px-0">
+      <div className="border-4 border-dashed border-green-200 rounded-lg h-96 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            User Management Dashboard
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Manage users, roles, and permissions.
           </p>
-          <button className="card-button">
-            View Users
-          </button>
-        </div>
-
-        {/* Roles & Permissions Card */}
-        <div className="dashboard-card">
-          <div className="card-icon">
-            🛡️
+          <div className="grid gap-4 md:grid-cols-3 mt-8">
+            <div className="p-4 bg-green-50 rounded-lg">
+              <h3 className="font-semibold text-green-900">👥 Manage Users</h3>
+              <p className="text-green-700 text-sm">View and manage user accounts</p>
+            </div>
+            <div className="p-4 bg-green-50 rounded-lg">
+              <h3 className="font-semibold text-green-900">🔐 Roles & Permissions</h3>
+              <p className="text-green-700 text-sm">Configure access control</p>
+            </div>
+            <div className="p-4 bg-green-50 rounded-lg">
+              <h3 className="font-semibold text-green-900">📊 Analytics</h3>
+              <p className="text-green-700 text-sm">View user activity statistics</p>
+            </div>
           </div>
-          <h3 className="card-title">Roles & Permissions</h3>
-          <p className="card-description">
-            Configure user roles and access control.
-          </p>
-          <button className="card-button">
-            Manage Roles
-          </button>
         </div>
-
-        {/* Analytics Card */}
-        <div className="dashboard-card">
-          <div className="card-icon">
-            📊
-          </div>
-          <h3 className="card-title">Analytics</h3>
-          <p className="card-description">
-            View user activity and system statistics.
-          </p>
-          <button className="card-button">
-            View Analytics
-          </button>
-        </div>
-      </div>
-
-      <div className="welcome-message">
-        Welcome back, Ranjay Kumar!
       </div>
     </div>
   )

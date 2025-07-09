@@ -1,60 +1,58 @@
-// Replace your src/components/ProtectedRoute.tsx with this fixed version:
-
 'use client'
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ReactNode } from 'react'
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+interface ProtectedRouteProps {
+  children: ReactNode
+}
+
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    console.log('🛡️ ProtectedRoute status check:', { status, hasSession: !!session })
-    
-    // Only redirect after we've confirmed the session status
-    if (status === 'loading') {
-      console.log('🛡️ ProtectedRoute: Session still loading, waiting...')
-      return
-    }
+    setMounted(true)
+  }, [])
 
-    // Mark that we've checked authentication
-    setHasCheckedAuth(true)
-
-    if (status === 'unauthenticated' || !session) {
-      console.log('🛡️ ProtectedRoute: No session found, redirecting to sign-in')
+  useEffect(() => {
+    if (mounted && status === 'unauthenticated') {
       router.push('/auth/sign-in')
-    } else {
-      console.log('🛡️ ProtectedRoute: Session confirmed, allowing access')
     }
-  }, [session, status, router])
+  }, [mounted, status, router])
 
-  // Show loading while session is being checked
-  if (status === 'loading' || !hasCheckedAuth) {
+  // Don't render anything until mounted
+  if (!mounted) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  // Show loading state
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  // Show unauthorized state
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying authentication...</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Redirecting to login...</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
         </div>
       </div>
     )
   }
 
-  // Don't render anything if not authenticated (redirect is happening)
-  if (status === 'unauthenticated' || !session) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to sign-in...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Render the protected content
+  // Render children when authenticated
   return <>{children}</>
 }

@@ -38,7 +38,12 @@ interface UserSettings {
 }
 
 export default function AccountSettings() {
-  const { data: session } = useSession()
+  // FIXED: Safe session handling for SSR
+  const sessionResult = useSession()
+  const session = sessionResult?.data
+  const status = sessionResult?.status || 'loading'
+  const [mounted, setMounted] = useState(false) // ADD mounted state  
+
   const [settings, setSettings] = useState<UserSettings | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -48,11 +53,38 @@ export default function AccountSettings() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
+  // ADD mounted tracking
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // UPDATE this useEffect to check mounted
+  useEffect(() => {
+    if (!mounted) return // Don't run during SSR
+    
     if (session?.user?.id) {
       fetchSettings()
     }
-  }, [session])
+  }, [session, mounted]) // Add mounted to dependencies
+
+  // ADD loading check
+  if (!mounted || status === 'loading') {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
+  }
 
   const fetchSettings = async () => {
     setIsLoading(true)
@@ -226,6 +258,20 @@ export default function AccountSettings() {
     }
     return descriptions[key] || 'Privacy setting'
   }
+
+  // Add loading check for SSR
+  if (!mounted) {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading settings...</span>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
+  }  
 
   if (isLoading || !settings) {
     return (

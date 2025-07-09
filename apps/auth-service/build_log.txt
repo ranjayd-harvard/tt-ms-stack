@@ -1,0 +1,133 @@
+
+> auth-service@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.4
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 8.0s
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+(node:36077) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36070) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36079) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36078) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36074) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36081) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36073) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36082) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36072) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36080) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36068) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36071) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36076) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36069) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36075) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+   Generating static pages (0/67) ...
+(node:36084) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+   Generating static pages (16/67) 
+(node:36083) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:36085) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+   Generating static pages (33/67) 
+   Generating static pages (50/67) 
+ ✓ Generating static pages (67/67)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                  Size  First Load JS
+┌ ○ /                                       260 B         102 kB
+├ ○ /_not-found                             985 B         103 kB
+├ ○ /about                                  260 B         102 kB
+├ ○ /account/activity                     4.88 kB         119 kB
+├ ○ /account/profile                      5.19 kB         119 kB
+├ ○ /account/security                       983 B         112 kB
+├ ○ /account/settings                     5.46 kB         119 kB
+├ ƒ /api/auth/[...nextauth]                 260 B         102 kB
+├ ƒ /api/auth/account-linking/auto-link     260 B         102 kB
+├ ƒ /api/auth/account-linking/candidates    260 B         102 kB
+├ ƒ /api/auth/account-linking/group         260 B         102 kB
+├ ƒ /api/auth/account-linking/merge         260 B         102 kB
+├ ƒ /api/auth/account-linking/suggest       260 B         102 kB
+├ ƒ /api/auth/check-2fa                     260 B         102 kB
+├ ƒ /api/auth/check-linking                 260 B         102 kB
+├ ƒ /api/auth/enhanced-phone-register       260 B         102 kB
+├ ƒ /api/auth/enhanced-register             260 B         102 kB
+├ ƒ /api/auth/forgot-password               260 B         102 kB
+├ ƒ /api/auth/merge-accounts                260 B         102 kB
+├ ƒ /api/auth/phone-login                   260 B         102 kB
+├ ƒ /api/auth/register                      260 B         102 kB
+├ ƒ /api/auth/register-phone                260 B         102 kB
+├ ƒ /api/auth/reset-password                260 B         102 kB
+├ ƒ /api/auth/user                          260 B         102 kB
+├ ƒ /api/auth/verify                        260 B         102 kB
+├ ƒ /api/auth/verify-email                  260 B         102 kB
+├ ƒ /api/auth/verify-phone                  260 B         102 kB
+├ ƒ /api/debug/2fa-check                    260 B         102 kB
+├ ƒ /api/debug/2fa-status                   260 B         102 kB
+├ ƒ /api/test-sms                           260 B         102 kB
+├ ƒ /api/user/account-status                260 B         102 kB
+├ ƒ /api/user/activities                    260 B         102 kB
+├ ƒ /api/user/add-email                     260 B         102 kB
+├ ƒ /api/user/add-phone                     260 B         102 kB
+├ ƒ /api/user/backup-codes                  260 B         102 kB
+├ ƒ /api/user/change-password               260 B         102 kB
+├ ƒ /api/user/complete-profile              260 B         102 kB
+├ ƒ /api/user/profile                       260 B         102 kB
+├ ƒ /api/user/remove-email                  260 B         102 kB
+├ ƒ /api/user/remove-oauth                  260 B         102 kB
+├ ƒ /api/user/remove-phone                  260 B         102 kB
+├ ƒ /api/user/security                      260 B         102 kB
+├ ƒ /api/user/settings                      260 B         102 kB
+├ ƒ /api/user/social-accounts               260 B         102 kB
+├ ƒ /api/user/two-factor                    260 B         102 kB
+├ ƒ /api/user/two-factor/status             260 B         102 kB
+├ ƒ /api/user/verify-linked-email           260 B         102 kB
+├ ƒ /api/user/verify-phone                  260 B         102 kB
+├ ○ /auth/forgot-password                 1.46 kB         106 kB
+├ ○ /auth/register                        2.37 kB         109 kB
+├ ○ /auth/register-phone                  2.66 kB         110 kB
+├ ○ /auth/reset-password                  1.89 kB         107 kB
+├ ○ /auth/sign-in                         4.56 kB         119 kB
+├ ○ /auth/sign-up                         4.51 kB         121 kB
+├ ○ /auth/verify-email                    1.39 kB         106 kB
+├ ○ /auth/verify-linked-email             1.55 kB         107 kB
+├ ○ /dashboard                             1.2 kB         112 kB
+├ ○ /footer-demo                            225 B         120 kB
+├ ○ /footer-showcase                        225 B         120 kB
+├ ○ /profile                              1.43 kB         112 kB
+├ ○ /simple-test                            260 B         102 kB
+├ ○ /tailwind-test                          260 B         102 kB
+├ ○ /theme-test                             260 B         102 kB
+├ ○ /themed-example                         225 B         120 kB
+└ ○ /verify-components                     195 kB         315 kB
++ First Load JS shared by all              102 kB
+  ├ chunks/8315-e49fe8ff5c4af340.js       46.5 kB
+  ├ chunks/87c73c54-2cb771f71850611a.js   53.2 kB
+  └ other shared chunks (total)           1.93 kB
+
+
+ƒ Middleware                              55.8 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

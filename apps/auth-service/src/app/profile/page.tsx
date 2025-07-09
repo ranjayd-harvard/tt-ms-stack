@@ -1,11 +1,39 @@
-// src/app/profile/page.tsx
+// apps/auth-service/src/app/profile/page.tsx
 'use client'
 
+import { useEffect, useState } from 'react'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useSession } from 'next-auth/react'
 
 export default function Profile() {
-  const { data: session } = useSession()
+  // FIXED: Safe session handling for SSR
+  const sessionResult = useSession()
+  const session = sessionResult?.data
+  const status = sessionResult?.status || 'loading'
+  
+  const [mounted, setMounted] = useState(false)
+
+  // Ensure component is mounted before accessing session
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Single loading check that handles both mounting and session loading
+  if (!mounted || status === 'loading') {
+    return (
+      <ProtectedRoute>
+        <div className="px-4 py-6 sm:px-0">
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
+  }
 
   return (
     <ProtectedRoute>
@@ -21,159 +49,80 @@ export default function Profile() {
               </div>
             </div>
           </div>
-          {session && (
-            <div className="space-y-6">
-              <div className="flex items-center space-x-6">
-                <div className="relative">
-                  <img
-                    className="h-24 w-24 rounded-full border-4 border-gray-200"
-                    src={session.user?.image || ''}
-                    alt={session.user?.name || ''}
-                  />
-                  {session.user?.avatarType === 'default' && (
-                    <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                      Default
-                    </div>
-                  )}
-                  {session.user?.avatarType === 'oauth' && (
-                    <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                      OAuth
-                    </div>
-                  )}
-                  {session.user?.avatarType === 'uploaded' && (
-                    <div className="absolute -bottom-1 -right-1 bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
-                      Custom
-                    </div>
-                  )}
-                </div>
+
+          {session?.user ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">{session.user?.name}</h2>
-                  <p className="text-gray-600">{session.user?.email}</p>
-                  {session.user?.registerSource && (
-                    <p className="text-sm text-blue-600 mt-1">
-                      Registered via: {session.user.registerSource}
-                    </p>
-                  )}
-                  {session.user?.avatarType === 'default' && (
-                    <p className="text-sm text-gray-500 mt-2">
-                      💡 You can upload a custom profile picture later
-                    </p>
-                  )}
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Account Information
+                  </h3>
+                  <dl className="space-y-3">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Name</dt>
+                      <dd className="text-sm text-gray-900">
+                        {session.user.name || 'Not provided'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Email</dt>
+                      <dd className="text-sm text-gray-900">
+                        {session.user.email || 'Not provided'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">User ID</dt>
+                      <dd className="text-sm text-gray-900 font-mono">
+                        {session.user.id || 'Not available'}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
-              </div>
-              <div className="border-t pt-6">
-                <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Full name</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{session.user?.name}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Email address</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{session.user?.email}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Registration source</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        session.user?.registerSource === 'credentials' 
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {session.user?.registerSource || 'Unknown'}
-                      </span>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Current provider</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        session.user?.registerSource === 'credentials' 
-                          ? 'bg-blue-100 text-blue-800'
-                          : session.user?.registerSource === 'google'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {session.user?.registerSource || 'Unknown'}
-                      </span>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Avatar type</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        session.user?.avatarType === 'default'
-                          ? 'bg-blue-100 text-blue-800'
-                          : session.user?.avatarType === 'oauth'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {session.user?.avatarType === 'default' ? 'Generated Avatar' :
-                         session.user?.avatarType === 'oauth' ? 'OAuth Profile' :
-                         session.user?.avatarType === 'uploaded' ? 'Custom Upload' : 'Unknown'}
-                      </span>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Profile actions</dt>
-                    <dd className="mt-1 text-sm">
-                      {session.user?.avatarType === 'default' && (
-                        <button className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-700 transition-colors">
-                          Upload Custom Photo
-                        </button>
-                      )}
-                      {session.user?.avatarType !== 'default' && (
-                        <button className="bg-gray-600 text-white px-3 py-1 rounded-md text-xs hover:bg-gray-700 transition-colors">
-                          Change Photo
-                        </button>
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Account Status</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        Active
-                      </span>
-                      {session.user?.twoFactorEnabled && (
-                        <span className="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                          2FA Enabled
-                        </span>
-                      )}
-                    </dd>
-                  </div>                  
-                </dl>
+
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Session Details
+                  </h3>
+                  <dl className="space-y-3">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Status</dt>
+                      <dd className="text-sm text-green-600 font-medium">
+                        ✅ Authenticated
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Register Source</dt>
+                      <dd className="text-sm text-gray-900">
+                        {(session.user as any).registerSource || 'Not available'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Avatar Type</dt>
+                      <dd className="text-sm text-gray-900">
+                        {(session.user as any).avatarType || 'default'}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
               </div>
 
-              {/* Additional Profile Stats Section */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Account Information</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {session.user?.registerSource === 'credentials' ? '🔐' : '🌐'}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {session.user?.registerSource === 'credentials' ? 'Secure Login' : 'Social Login'}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        {session.user?.avatarType === 'default' ? '🎨' : 
-                         session.user?.avatarType === 'oauth' ? '📷' : '📁'}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {session.user?.avatarType === 'default' ? 'Generated Avatar' :
-                         session.user?.avatarType === 'oauth' ? 'Profile Picture' : 'Custom Photo'}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">✨</div>
-                      <div className="text-sm text-gray-600 mt-1">Active Session</div>
-                    </div>
-                  </div>
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Quick Actions
+                </h3>
+                <div className="flex space-x-4">
+                  <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                    Edit Profile
+                  </button>
+                  <button className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    Account Settings
+                  </button>
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Please sign in to view your profile.</p>
             </div>
           )}
         </div>

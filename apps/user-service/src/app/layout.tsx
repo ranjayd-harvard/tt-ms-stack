@@ -1,6 +1,5 @@
 import '@tt-ms-stack/ui/src/styles/globals.css'
 import { Inter } from 'next/font/google'
-import { AuthProvider } from './providers/auth-provider'
 import { AppLayout } from '@tt-ms-stack/ui'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -16,22 +15,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="user-theme">
-      <body className={`${inter.className} user-theme`}>
-        <AuthProvider>
-          <AppLayout
-              serviceName="User Service"
-              serviceColor="green"
-              showServiceSwitcher={true}
-              customNavLinks={[
-                { href: '/users', label: 'Users' },
-                { href: '/roles', label: 'Roles' }
-              ]}
-              showFooter={false}
-            >
-              {children}
-          </AppLayout>
-        </AuthProvider>
+    <html lang="en">
+      <body className={inter.className}>
+        <AppLayout 
+          serviceName="User Service"
+          serviceColor="green"
+          showServiceSwitcher={true}
+          customNavLinks={[
+            { href: '/users', label: 'Users' },
+            { href: '/roles', label: 'Roles' },
+            { href: '/analytics', label: 'Analytics' },
+          ]}
+        >
+          {children}
+        </AppLayout>
       </body>
     </html>
   )

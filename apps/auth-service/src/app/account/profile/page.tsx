@@ -44,7 +44,12 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { data: session, update } = useSession()
+  // FIXED: Safe session handling for SSR
+  const sessionResult = useSession()
+  const session = sessionResult?.data
+  const update = sessionResult?.update
+  const [mounted, setMounted] = useState(false)
+
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
@@ -62,11 +67,18 @@ export default function ProfilePage() {
     phoneNumber: ''
   })
 
+  // Track mounted state
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return // Don't run during SSR
+    
     if (session?.user?.id) {
       fetchUserProfile()
     }
-  }, [session])
+  }, [session, mounted]) // Add mounted to dependencies
 
   const fetchUserProfile = async () => {
     setIsLoading(true)
@@ -168,6 +180,20 @@ export default function ProfilePage() {
     if (diffInDays < 30) return `${diffInDays} days`
     if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months`
     return `${Math.floor(diffInDays / 365)} years`
+  }
+
+  // Add loading check for SSR
+  if (!mounted) {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading profile...</span>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
   }
 
   if (isLoading) {

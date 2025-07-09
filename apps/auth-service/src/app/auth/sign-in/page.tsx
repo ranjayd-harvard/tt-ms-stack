@@ -16,16 +16,28 @@ interface Provider {
 
 // Component that uses useSearchParams
 function UnifiedSignInContent() {
-  const { data: session, status } = useSession()
+  // FIXED: Safe destructuring for SSR
+  const sessionResult = useSession()
+  const session = sessionResult?.data
+  const status = sessionResult?.status || 'loading'
+
   const [activeMethod, setActiveMethod] = useState<AuthMethod>('email')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [providers, setProviders] = useState<Record<string, Provider>>({})
+  const [mounted, setMounted] = useState(false)
   
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
 
+  // Track mounted state to prevent SSR issues
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
     getProviders().then((res) => {
       if (res) {
         // Convert NextAuth providers to our Provider interface
@@ -40,10 +52,12 @@ function UnifiedSignInContent() {
         setProviders(mapped)
       }
     })
-  }, [])
+  }, [mounted])
 
   // Redirect if already signed in
   useEffect(() => {
+    if (!mounted) return
+    
     console.log('🔍 Auth status check:', { status, hasSession: !!session, callbackUrl })
     
     if (status === 'authenticated' && session) {
@@ -51,7 +65,7 @@ function UnifiedSignInContent() {
       // Use window.location.href for immediate redirect instead of router.push
       window.location.href = callbackUrl
     }
-  }, [session, status, callbackUrl])
+  }, [session, status, callbackUrl, mounted])
 
   const methods = [
     { 
@@ -75,7 +89,7 @@ function UnifiedSignInContent() {
   ]
 
   // Show loading while checking authentication status
-  if (status === 'loading') {
+  if (!mounted || status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
